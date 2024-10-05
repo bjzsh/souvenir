@@ -1,0 +1,18 @@
+[package]
+name = "souvenir"
+description = "Prefixed identifier library"
+license = "MIT"
+repository = "https://github.com/cydq/souvenir"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["rand"]
+diesel = ["dep:diesel"]
+rand = ["dep:rand"]
+
+[dependencies]
+base58 = "0.2.0"
+diesel = { version = "2.2.4", optional = true }
+rand = { version = "0.8.5", optional = true }
+
