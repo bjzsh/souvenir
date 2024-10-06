@@ -11,7 +11,7 @@ use std::marker::PhantomData;
 #[cfg_attr(feature = "diesel", diesel(sql_type = ::diesel::sql_types::Int8))]
 pub struct Id<T: Identifiable> {
     marker: PhantomData<T>,
-    value: u64,
+    pub(crate) value: [u8; 8],
 }
 
 impl<T: Identifiable> Copy for Id<T> {}
@@ -23,15 +23,27 @@ impl<T: Identifiable> Clone for Id<T> {
 }
 
 impl<T: Identifiable> Id<T> {
-    pub fn new(value: u64) -> Self {
+    pub fn new(value: [u8; 8]) -> Self {
         Self {
             marker: PhantomData,
             value,
         }
     }
 
-    pub fn value(&self) -> u64 {
-        self.value
+    pub fn from_u64(value: u64) -> Self {
+        Self::new(value.to_le_bytes())
+    }
+
+    pub fn from_i64(value: i64) -> Self {
+        Self::new(value.to_le_bytes())
+    }
+
+    pub fn as_u64(self) -> u64 {
+        u64::from_le_bytes(self.value)
+    }
+
+    pub fn as_i64(self) -> i64 {
+        i64::from_le_bytes(self.value)
     }
 
     pub fn test(value: &str) -> bool {
@@ -50,7 +62,6 @@ impl<T: Identifiable> Id<T> {
             .ok()
             .map(|vec| -> Option<[u8; 8]> { vec.try_into().ok() })
             .flatten()
-            .map(|bytes| u64::from_be_bytes(bytes))
             .map(|value| Self::new(value))
     }
 }
@@ -61,13 +72,31 @@ impl<T: Identifiable> Display for Id<T> {
             f,
             "{}_{}",
             T::prefix(),
-            self.value.to_be_bytes().to_base58()
+            self.value.to_base58()
         )
     }
 }
 
 impl<T: Identifiable> From<Id<T>> for u64 {
     fn from(value: Id<T>) -> Self {
-        value.value
+        value.as_u64()
+    }
+}
+
+impl<T: Identifiable> From<Id<T>> for i64 {
+    fn from(value: Id<T>) -> Self {
+        value.as_i64()
+    }
+}
+
+impl<T: Identifiable> From<u64> for Id<T> {
+    fn from(value: u64) -> Self {
+        Self::from_u64(value)
+    }
+}
+
+impl<T: Identifiable> From<i64> for Id<T> {
+    fn from(value: i64) -> Self {
+        Self::from_i64(value)
     }
 }
