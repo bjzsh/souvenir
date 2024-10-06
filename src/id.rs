@@ -3,7 +3,7 @@ use base58::{FromBase58, ToBase58};
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
     feature = "diesel",
     derive(::diesel::AsExpression, ::diesel::FromSqlRow)
@@ -12,6 +12,14 @@ use std::marker::PhantomData;
 pub struct Id<T: Identifiable> {
     marker: PhantomData<T>,
     value: u64,
+}
+
+impl<T: Identifiable> Copy for Id<T> {}
+
+impl<T: Identifiable> Clone for Id<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
 }
 
 impl<T: Identifiable> Id<T> {
