@@ -3,7 +3,7 @@ use base58::{FromBase58, ToBase58};
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
     feature = "diesel",
     derive(::diesel::AsExpression, ::diesel::FromSqlRow)
