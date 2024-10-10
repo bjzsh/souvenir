@@ -8,6 +8,6 @@ impl Identifiable for Generic {
 
 impl Id<Generic> {
     pub fn cast<T: Identifiable>(self) -> Id<T> {
-        Id::new(self.value)
+        Id::new(self.value())
     }
 }
