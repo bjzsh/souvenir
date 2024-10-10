@@ -1,3 +1,3 @@
 pub trait Identifiable {
-    fn prefix() -> &'static str;
+    const PREFIX: &'static str;
 }

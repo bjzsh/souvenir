@@ -2,17 +2,18 @@
 name = "souvenir"
 description = "Prefixed identifier library"
 license = "MIT"
-repository = "https://github.com/cydq/souvenir"
-version = "0.1.3"
+repository = "https://github.com/j5pr/souvenir"
+version = "0.2.0"
 edition = "2021"
 
 [features]
-default = ["rand"]
+default = ["rand", "serde"]
 diesel = ["dep:diesel"]
 rand = ["dep:rand"]
+serde = ["dep:serde"]
 
 [dependencies]
-base58 = "0.2.0"
 diesel = { version = "2.2.4", optional = true }
 rand = { version = "0.8.5", optional = true }
+serde = { version = "1.0.210", optional = true }
 

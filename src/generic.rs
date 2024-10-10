@@ -3,9 +3,7 @@ use crate::{Id, Identifiable};
 pub struct Generic;
 
 impl Identifiable for Generic {
-    fn prefix() -> &'static str {
-        "flake"
-    }
+    const PREFIX: &'static str = "flake";
 }
 
 impl Id<Generic> {
