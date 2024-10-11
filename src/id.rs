@@ -1,6 +1,6 @@
 use crate::encoding::{parse_base32, stringify_base32};
 use crate::{Error, Identifiable};
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 
 /// Type of the underlying data stored in an `Id`.
@@ -25,7 +25,7 @@ pub type IdBytes = [u8; 8];
 /// println!("{}", id);
 ///
 /// ```
-#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
     feature = "diesel",
     derive(::diesel::AsExpression, ::diesel::FromSqlRow)
@@ -33,7 +33,7 @@ pub type IdBytes = [u8; 8];
 #[cfg_attr(feature = "diesel", diesel(sql_type = ::diesel::sql_types::Int8))]
 pub struct Id<T: Identifiable> {
     marker: PhantomData<T>,
-    value: IdBytes,
+    pub(crate) value: IdBytes,
 }
 
 impl<T: Identifiable> Copy for Id<T> {}
@@ -100,6 +100,12 @@ impl<T: Identifiable> Id<T> {
     /// Get the prefix of this identifier
     pub const fn prefix(&self) -> &'static str {
         T::PREFIX
+    }
+}
+
+impl<T: Identifiable> Debug for Id<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 

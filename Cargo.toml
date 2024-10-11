@@ -3,17 +3,22 @@ name = "souvenir"
 description = "Prefixed identifier library"
 license = "MIT"
 repository = "https://github.com/j5pr/souvenir"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 
 [features]
 default = ["rand", "serde"]
 diesel = ["dep:diesel"]
+diesel-postgres = ["diesel", "diesel/postgres_backend"]
+diesel-mysql = ["diesel", "diesel/mysql_backend"]
+diesel-sqlite = ["diesel", "diesel/sqlite"]
 rand = ["dep:rand"]
 serde = ["dep:serde"]
+sqlx = ["dep:sqlx"]
 
 [dependencies]
 diesel = { version = "2.2.4", optional = true }
 rand = { version = "0.8.5", optional = true }
 serde = { version = "1.0.210", optional = true }
+sqlx = { version = "0.8.2", optional = true }
 
