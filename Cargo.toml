@@ -3,7 +3,7 @@ name = "souvenir"
 description = "Prefixed identifier library"
 license = "MIT"
 repository = "https://github.com/j5pr/souvenir"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 
 [features]
