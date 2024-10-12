@@ -18,16 +18,6 @@ macro_rules! to_sql_raw {
     };
 }
 
-#[cfg(feature = "diesel-postgres")]
-mod pg {
-    to_sql_raw!(::diesel::pg::Pg);
-}
-
-#[cfg(feature = "diesel-mysql")]
-mod mysql {
-    to_sql_raw!(::diesel::mysql::Mysql);
-}
-
 macro_rules! to_sql_default {
     ($db: ty) => {
         use crate::{Id, Identifiable};
@@ -43,6 +33,16 @@ macro_rules! to_sql_default {
             }
         }
     };
+}
+
+#[cfg(feature = "diesel-postgres")]
+mod pg {
+    to_sql_raw!(::diesel::pg::Pg);
+}
+
+#[cfg(feature = "diesel-mysql")]
+mod mysql {
+    to_sql_raw!(::diesel::mysql::Mysql);
 }
 
 #[cfg(feature = "diesel-sqlite")]

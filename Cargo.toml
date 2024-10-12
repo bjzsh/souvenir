@@ -3,7 +3,7 @@ name = "souvenir"
 description = "Prefixed identifier library"
 license = "MIT"
 repository = "https://github.com/j5pr/souvenir"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 
 [features]
@@ -21,4 +21,3 @@ diesel = { version = "2.2.4", optional = true }
 rand = { version = "0.8.5", optional = true }
 serde = { version = "1.0.210", optional = true }
 sqlx = { version = "0.8.2", optional = true }
-

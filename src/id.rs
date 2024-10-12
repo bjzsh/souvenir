@@ -20,10 +20,10 @@ pub type IdBytes = [u8; 8];
 /// }
 ///
 /// let id: Id<User> = Id::random();
-/// let id2: Id<User> = Id::parse("user_4n3y65asan4bj").unwrap();
-///
 /// println!("{}", id);
 ///
+/// let id2: Id<User> = Id::parse("user_4n3y65asan4bj").unwrap();
+/// assert_eq!(id2.to_string(), "user_4n3y65asan4bj");
 /// ```
 #[derive(Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
@@ -33,15 +33,7 @@ pub type IdBytes = [u8; 8];
 #[cfg_attr(feature = "diesel", diesel(sql_type = ::diesel::sql_types::Int8))]
 pub struct Id<T: Identifiable> {
     marker: PhantomData<T>,
-    pub(crate) value: IdBytes,
-}
-
-impl<T: Identifiable> Copy for Id<T> {}
-
-impl<T: Identifiable> Clone for Id<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
+    value: IdBytes,
 }
 
 impl<T: Identifiable> Id<T> {
@@ -56,16 +48,6 @@ impl<T: Identifiable> Id<T> {
     /// Get the data value of the identifier.
     pub fn value(self) -> [u8; 8] {
         self.value
-    }
-
-    /// Convert a `u64` to an `Id<T>`.
-    pub fn from_u64(value: u64) -> Self {
-        Self::new(value.to_be_bytes())
-    }
-
-    /// Convert an `i64` to an `Id<T>`.
-    pub fn from_i64(value: i64) -> Self {
-        Self::new(value.to_be_bytes())
     }
 
     /// Get the data value of the identifier as a `u64`.
@@ -98,8 +80,16 @@ impl<T: Identifiable> Id<T> {
     }
 
     /// Get the prefix of this identifier
-    pub const fn prefix(&self) -> &'static str {
+    pub const fn prefix(self) -> &'static str {
         T::PREFIX
+    }
+}
+
+impl<T: Identifiable> Copy for Id<T> {}
+
+impl<T: Identifiable> Clone for Id<T> {
+    fn clone(&self) -> Self {
+        *self
     }
 }
 
@@ -132,14 +122,26 @@ impl<T: Identifiable> From<Id<T>> for i64 {
     }
 }
 
+impl<T: Identifiable> From<Id<T>> for IdBytes {
+    fn from(value: Id<T>) -> Self {
+        value.value()
+    }
+}
+
 impl<T: Identifiable> From<u64> for Id<T> {
     fn from(value: u64) -> Self {
-        Self::from_u64(value)
+        Self::new(value.to_be_bytes())
     }
 }
 
 impl<T: Identifiable> From<i64> for Id<T> {
     fn from(value: i64) -> Self {
-        Self::from_i64(value)
+        Self::new(value.to_be_bytes())
+    }
+}
+
+impl<T: Identifiable> From<IdBytes> for Id<T> {
+    fn from(value: IdBytes) -> Self {
+        Self::new(value)
     }
 }
