@@ -1,8 +1,8 @@
-use crate::{Id, Identifiable};
+use crate::{Id, Type};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-impl<T: Identifiable> Serialize for Id<T> {
+impl<T: Type> Serialize for Id<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -11,7 +11,7 @@ impl<T: Identifiable> Serialize for Id<T> {
     }
 }
 
-impl<'de, T: Identifiable> Deserialize<'de> for Id<T> {
+impl<'de, T: Type> Deserialize<'de> for Id<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,

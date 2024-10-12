@@ -1,5 +1,5 @@
 use crate::encoding::{parse_base32, stringify_base32};
-use crate::{Error, Identifiable};
+use crate::{Error, Type};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 
@@ -31,12 +31,12 @@ pub type IdBytes = [u8; 8];
     derive(::diesel::AsExpression, ::diesel::FromSqlRow)
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = ::diesel::sql_types::Int8))]
-pub struct Id<T: Identifiable> {
+pub struct Id<T: Type + ?Sized> {
     marker: PhantomData<T>,
     value: IdBytes,
 }
 
-impl<T: Identifiable> Id<T> {
+impl<T: Type + ?Sized> Id<T> {
     /// Create a new `Id<T>` with the following underlying value.
     pub fn new(value: [u8; 8]) -> Self {
         Self {
@@ -46,7 +46,12 @@ impl<T: Identifiable> Id<T> {
     }
 
     /// Get the data value of the identifier.
-    pub fn value(self) -> [u8; 8] {
+    pub fn as_bytes(&self) -> &[u8; 8] {
+        &self.value
+    }
+
+    /// Get the data value of the identifier.
+    pub fn to_bytes(self) -> [u8; 8] {
         self.value
     }
 
@@ -85,21 +90,21 @@ impl<T: Identifiable> Id<T> {
     }
 }
 
-impl<T: Identifiable> Copy for Id<T> {}
+impl<T: Type + ?Sized> Copy for Id<T> {}
 
-impl<T: Identifiable> Clone for Id<T> {
+impl<T: Type + ?Sized> Clone for Id<T> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<T: Identifiable> Debug for Id<T> {
+impl<T: Type + ?Sized> Debug for Id<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
     }
 }
 
-impl<T: Identifiable> Display for Id<T> {
+impl<T: Type + ?Sized> Display for Id<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -110,37 +115,37 @@ impl<T: Identifiable> Display for Id<T> {
     }
 }
 
-impl<T: Identifiable> From<Id<T>> for u64 {
+impl<T: Type + ?Sized> From<Id<T>> for u64 {
     fn from(value: Id<T>) -> Self {
         value.to_u64()
     }
 }
 
-impl<T: Identifiable> From<Id<T>> for i64 {
+impl<T: Type + ?Sized> From<Id<T>> for i64 {
     fn from(value: Id<T>) -> Self {
         value.to_i64()
     }
 }
 
-impl<T: Identifiable> From<Id<T>> for IdBytes {
+impl<T: Type + ?Sized> From<Id<T>> for IdBytes {
     fn from(value: Id<T>) -> Self {
-        value.value()
+        value.to_bytes()
     }
 }
 
-impl<T: Identifiable> From<u64> for Id<T> {
+impl<T: Type + ?Sized> From<u64> for Id<T> {
     fn from(value: u64) -> Self {
         Self::new(value.to_be_bytes())
     }
 }
 
-impl<T: Identifiable> From<i64> for Id<T> {
+impl<T: Type + ?Sized> From<i64> for Id<T> {
     fn from(value: i64) -> Self {
         Self::new(value.to_be_bytes())
     }
 }
 
-impl<T: Identifiable> From<IdBytes> for Id<T> {
+impl<T: Type + ?Sized> From<IdBytes> for Id<T> {
     fn from(value: IdBytes) -> Self {
         Self::new(value)
     }

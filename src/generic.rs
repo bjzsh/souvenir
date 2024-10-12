@@ -1,13 +1,13 @@
-use crate::{Id, Identifiable};
+use crate::{Id, Type};
 
 pub struct Generic;
 
-impl Identifiable for Generic {
+impl Type for Generic {
     const PREFIX: &'static str = "flake";
 }
 
 impl Id<Generic> {
-    pub fn cast<T: Identifiable>(self) -> Id<T> {
-        Id::new(self.value())
+    pub fn cast<T: Type>(self) -> Id<T> {
+        self.to_bytes().into()
     }
 }
