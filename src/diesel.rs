@@ -11,7 +11,7 @@ macro_rules! to_sql_raw {
             i64: serialize::ToSql<diesel::sql_types::BigInt, $db>,
         {
             fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, $db>) -> serialize::Result {
-                let bytes = i64::from_be_bytes(self.value());
+                let bytes = i64::from_be_bytes(self.to_bytes());
                 <i64 as serialize::ToSql<BigInt, $db>>::to_sql(&bytes, &mut out.reborrow())
             }
         }
@@ -28,7 +28,7 @@ macro_rules! to_sql_default {
             i64: serialize::ToSql<BigInt, $db>,
         {
             fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, $db>) -> serialize::Result {
-                out.set_value(i64::from_be_bytes(self.value()));
+                out.set_value(i64::from_be_bytes(self.to_bytes()));
                 Ok(serialize::IsNull::No)
             }
         }

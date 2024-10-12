@@ -23,7 +23,7 @@ where
         &self,
         buf: &mut <DB as Database>::ArgumentBuffer<'q>,
     ) -> Result<IsNull, sqlx::error::BoxDynError> {
-        <i64 as Encode<'q, DB>>::encode_by_ref(&i64::from_be_bytes(self.value()), buf)
+        <i64 as Encode<'q, DB>>::encode_by_ref(&i64::from_be_bytes(self.to_bytes()), buf)
     }
 
     fn encode(
@@ -33,11 +33,11 @@ where
     where
         Self: Sized,
     {
-        <i64 as Encode<'q, DB>>::encode(i64::from_be_bytes(self.value()), buf)
+        <i64 as Encode<'q, DB>>::encode(i64::from_be_bytes(self.to_bytes()), buf)
     }
 
     fn produces(&self) -> Option<<DB as Database>::TypeInfo> {
-        <i64 as Encode<'q, DB>>::produces(&i64::from_be_bytes(self.value()))
+        <i64 as Encode<'q, DB>>::produces(&i64::from_be_bytes(self.to_bytes()))
     }
 }
 
