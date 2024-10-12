@@ -9,13 +9,13 @@ pub type IdBytes = [u8; 8];
 /// A typed 64-bit identifier.
 ///
 /// ```
-/// use souvenir::{Identifiable, Id};
+/// use souvenir::{Type, Id};
 ///
 /// struct User {
 ///     // fields omitted
 /// }
 ///
-/// impl Identifiable for User {
+/// impl Type for User {
 ///     const PREFIX: &'static str = "user";
 /// }
 ///
