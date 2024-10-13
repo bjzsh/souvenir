@@ -2,6 +2,7 @@ use crate::encoding::{parse_base32, stringify_base32};
 use crate::{Error, Type};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
+use std::str::FromStr;
 
 /// Type of the underlying data stored in an `Id`.
 pub type IdBytes = [u8; 8];
@@ -112,6 +113,14 @@ impl<T: Type + ?Sized> Display for Id<T> {
             T::PREFIX,
             stringify_base32(self.value).expect("id value to stringify correctly")
         )
+    }
+}
+
+impl<T: Type + ?Sized> FromStr for Id<T> {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
     }
 }
 
