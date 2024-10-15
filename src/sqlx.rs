@@ -1,53 +1,104 @@
-use sqlx::{encode::IsNull, Database, Decode, Encode, Type};
+#[cfg(feature = "sqlx-postgres")]
+mod pg {
+    use crate::{Id, Type};
+    use sqlx::postgres::{
+        types::Oid, PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgValueFormat, PgValueRef,
+        Postgres,
+    };
+    use sqlx::{encode::IsNull, error::BoxDynError, Decode, Encode};
 
-use crate::{Id, Identifiable};
-
-impl<T: Identifiable, DB: Database> Type<DB> for Id<T>
-where
-    i64: Type<DB>,
-{
-    fn type_info() -> DB::TypeInfo {
-        <i64 as Type<DB>>::type_info()
+    impl<T: Type> sqlx::Type<Postgres> for Id<T> {
+        fn type_info() -> PgTypeInfo {
+            PgTypeInfo::with_oid(Oid(2950))
+        }
     }
 
-    fn compatible(ty: &<DB as Database>::TypeInfo) -> bool {
-        <i64 as Type<DB>>::compatible(ty)
-    }
-}
-
-impl<'q, T: Identifiable, DB: Database> Encode<'q, DB> for Id<T>
-where
-    i64: Encode<'q, DB>,
-{
-    fn encode_by_ref(
-        &self,
-        buf: &mut <DB as Database>::ArgumentBuffer<'q>,
-    ) -> Result<IsNull, sqlx::error::BoxDynError> {
-        <i64 as Encode<'q, DB>>::encode_by_ref(&i64::from_be_bytes(self.to_bytes()), buf)
+    impl<T: Type> PgHasArrayType for Id<T> {
+        fn array_type_info() -> PgTypeInfo {
+            PgTypeInfo::with_oid(Oid(2951))
+        }
     }
 
-    fn encode(
-        self,
-        buf: &mut <DB as Database>::ArgumentBuffer<'q>,
-    ) -> Result<IsNull, sqlx::error::BoxDynError>
-    where
-        Self: Sized,
-    {
-        <i64 as Encode<'q, DB>>::encode(i64::from_be_bytes(self.to_bytes()), buf)
+    impl<T: Type> Encode<'_, Postgres> for Id<T> {
+        fn encode_by_ref(&self, buf: &mut PgArgumentBuffer) -> Result<IsNull, BoxDynError> {
+            buf.extend_from_slice(self.as_bytes());
+            Ok(IsNull::No)
+        }
     }
 
-    fn produces(&self) -> Option<<DB as Database>::TypeInfo> {
-        <i64 as Encode<'q, DB>>::produces(&i64::from_be_bytes(self.to_bytes()))
+    impl<T: Type> Decode<'_, Postgres> for Id<T> {
+        fn decode(value: PgValueRef) -> Result<Self, BoxDynError> {
+            match value.format() {
+                PgValueFormat::Binary => Self::try_from(value.as_bytes()?),
+                PgValueFormat::Text => value.as_str()?.parse(),
+            }
+            .map_err(Into::into)
+        }
     }
 }
 
-impl<'r, T: Identifiable, DB: Database> Decode<'r, DB> for Id<T>
-where
-    i64: Decode<'r, DB>,
-{
-    fn decode(value: <DB as Database>::ValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
-        let int = <i64 as Decode<'r, DB>>::decode(value)?;
+#[cfg(feature = "sqlx-mysql")]
+mod mysql {
+    use crate::{Id, Type};
+    use sqlx::mysql::{MySql, MySqlTypeInfo, MySqlValueRef};
+    use sqlx::{encode::IsNull, error::BoxDynError, Decode, Encode};
 
-        Ok(Self::from(int))
+    impl<T: Type> sqlx::Type<MySql> for Id<T> {
+        fn type_info() -> MySqlTypeInfo {
+            <&[u8] as sqlx::Type<MySql>>::type_info()
+        }
+
+        fn compatible(ty: &MySqlTypeInfo) -> bool {
+            <&[u8] as sqlx::Type<MySql>>::compatible(ty)
+        }
+    }
+
+    impl<T: Type> Encode<'_, MySql> for Id<T> {
+        fn encode_by_ref(&self, buf: &mut Vec<u8>) -> Result<IsNull, BoxDynError> {
+            <&[u8] as Encode<'_, MySql>>::encode(self.as_bytes(), buf)
+        }
+    }
+
+    impl<T: Type> Decode<'_, MySql> for Id<T> {
+        fn decode(value: MySqlValueRef) -> Result<Self, BoxDynError> {
+            let bytes = <&[u8] as Decode<MySql>>::decode(value)?;
+            Self::try_from(bytes).map_err(Into::into)
+        }
+    }
+}
+
+#[cfg(feature = "sqlx-sqlite")]
+mod sqlite {
+    use crate::{Id, Type};
+    use sqlx::sqlite::{Sqlite, SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
+    use sqlx::{encode::IsNull, error::BoxDynError, Decode, Encode};
+    use std::borrow::Cow;
+
+    impl<T: Type> sqlx::Type<Sqlite> for Id<T> {
+        fn type_info() -> SqliteTypeInfo {
+            <&str as sqlx::Type<Sqlite>>::type_info()
+        }
+
+        fn compatible(ty: &SqliteTypeInfo) -> bool {
+            <&str as sqlx::Type<Sqlite>>::compatible(ty)
+        }
+    }
+
+    impl<'q, T: Type> Encode<'q, Sqlite> for Id<T> {
+        fn encode_by_ref(
+            &self,
+            args: &mut Vec<SqliteArgumentValue<'q>>,
+        ) -> Result<IsNull, BoxDynError> {
+            args.push(SqliteArgumentValue::Text(Cow::Owned(self.to_string())));
+            Ok(IsNull::No)
+        }
+    }
+
+    impl<T: Type> Decode<'_, Sqlite> for Id<T> {
+        fn decode(value: SqliteValueRef<'_>) -> Result<Self, BoxDynError> {
+            <&str as Decode<Sqlite>>::decode(value)?
+                .parse()
+                .map_err(Into::into)
+        }
     }
 }

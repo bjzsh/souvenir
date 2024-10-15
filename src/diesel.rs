@@ -1,61 +1,65 @@
-use crate::{Id, Identifiable};
-use diesel::{backend::Backend, deserialize, sql_types::BigInt};
-
-macro_rules! to_sql_raw {
-    ($db: ty) => {
-        use crate::{Id, Identifiable};
-        use diesel::{serialize, sql_types::BigInt};
-
-        impl<T: Identifiable> serialize::ToSql<BigInt, $db> for Id<T>
-        where
-            i64: serialize::ToSql<diesel::sql_types::BigInt, $db>,
-        {
-            fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, $db>) -> serialize::Result {
-                let bytes = i64::from_be_bytes(self.to_bytes());
-                <i64 as serialize::ToSql<BigInt, $db>>::to_sql(&bytes, &mut out.reborrow())
-            }
-        }
-    };
-}
-
-macro_rules! to_sql_default {
-    ($db: ty) => {
-        use crate::{Id, Identifiable};
-        use diesel::{serialize, sql_types::BigInt};
-
-        impl<T: Identifiable> serialize::ToSql<BigInt, $db> for Id<T>
-        where
-            i64: serialize::ToSql<BigInt, $db>,
-        {
-            fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, $db>) -> serialize::Result {
-                out.set_value(i64::from_be_bytes(self.to_bytes()));
-                Ok(serialize::IsNull::No)
-            }
-        }
-    };
-}
-
 #[cfg(feature = "diesel-postgres")]
 mod pg {
-    to_sql_raw!(::diesel::pg::Pg);
+    use crate::{Id, Type};
+    use diesel::pg::{Pg, PgValue};
+    use diesel::{deserialize, serialize, sql_types::Uuid};
+    use std::io::Write;
+
+    impl<T: Type> serialize::ToSql<Uuid, Pg> for Id<T> {
+        fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, Pg>) -> serialize::Result {
+            out.write_all(self.as_bytes())
+                .map(|_| serialize::IsNull::No)
+                .map_err(Into::into)
+        }
+    }
+
+    impl<T: Type> deserialize::FromSql<Uuid, Pg> for Id<T> {
+        fn from_sql(value: PgValue<'_>) -> deserialize::Result<Self> {
+            value.as_bytes().try_into().map_err(Into::into)
+        }
+    }
 }
 
 #[cfg(feature = "diesel-mysql")]
 mod mysql {
-    to_sql_raw!(::diesel::mysql::Mysql);
+    use crate::{Id, Type};
+    use diesel::mysql::{Mysql, MysqlValue};
+    use diesel::{deserialize, serialize, sql_types::Binary};
+    use std::io::Write;
+
+    impl<T: Type> serialize::ToSql<Binary, Mysql> for Id<T> {
+        fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, Mysql>) -> serialize::Result {
+            out.write_all(self.as_bytes())
+                .map(|_| serialize::IsNull::No)
+                .map_err(Into::into)
+        }
+    }
+
+    impl<T: Type> deserialize::FromSql<Binary, Mysql> for Id<T> {
+        fn from_sql(value: MysqlValue<'_>) -> deserialize::Result<Self> {
+            value.as_bytes().try_into().map_err(Into::into)
+        }
+    }
 }
 
 #[cfg(feature = "diesel-sqlite")]
 mod sqlite {
-    to_sql_default!(::diesel::sqlite::Sqlite);
-}
+    use crate::{Id, Type};
+    use diesel::sqlite::{Sqlite, SqliteValue};
+    use diesel::{deserialize, serialize, sql_types::Text};
 
-impl<T: Identifiable, B: Backend> deserialize::FromSql<BigInt, B> for Id<T>
-where
-    i64: deserialize::FromSql<BigInt, B>,
-{
-    fn from_sql(bytes: <B as Backend>::RawValue<'_>) -> deserialize::Result<Self> {
-        <i64 as deserialize::FromSql<BigInt, B>>::from_sql(bytes)
-            .map(|id| Id::new(id.to_be_bytes()))
+    impl<T: Type> serialize::ToSql<Text, Sqlite> for Id<T> {
+        fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, Sqlite>) -> serialize::Result {
+            out.set_value(self.to_string());
+            Ok(serialize::IsNull::No)
+        }
+    }
+
+    impl<T: Type> deserialize::FromSql<Text, Sqlite> for Id<T> {
+        fn from_sql(value: SqliteValue<'_, '_, '_>) -> deserialize::Result<Self> {
+            <String as deserialize::FromSql<Text, Sqlite>>::from_sql(value)?
+                .parse()
+                .map_err(Into::into)
+        }
     }
 }

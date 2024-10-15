@@ -5,9 +5,9 @@ use std::marker::PhantomData;
 use std::str::FromStr;
 
 /// Type of the underlying data stored in an `Id`.
-pub type IdBytes = [u8; 8];
+pub type IdBytes = [u8; 16];
 
-/// A typed 64-bit identifier.
+/// A typed 128-bit identifier.
 ///
 /// ```
 /// use souvenir::{Type, Id};
@@ -23,8 +23,8 @@ pub type IdBytes = [u8; 8];
 /// let id: Id<User> = Id::random();
 /// println!("{}", id);
 ///
-/// let id2: Id<User> = Id::parse("user_4n3y65asan4bj").unwrap();
-/// assert_eq!(id2.to_string(), "user_4n3y65asan4bj");
+/// let id2: Id<User> = Id::parse("user_02v58c5a3fy30k560qrtg4rb2k").unwrap();
+/// assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4rb2k");
 /// ```
 #[derive(Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
@@ -39,7 +39,7 @@ pub struct Id<T: Type + ?Sized> {
 
 impl<T: Type + ?Sized> Id<T> {
     /// Create a new `Id<T>` with the following underlying value.
-    pub fn new(value: [u8; 8]) -> Self {
+    pub fn new(value: [u8; 16]) -> Self {
         Self {
             marker: PhantomData,
             value,
@@ -47,23 +47,23 @@ impl<T: Type + ?Sized> Id<T> {
     }
 
     /// Get the data value of the identifier.
-    pub fn as_bytes(&self) -> &[u8; 8] {
+    pub fn as_bytes(&self) -> &[u8; 16] {
         &self.value
     }
 
     /// Get the data value of the identifier.
-    pub fn to_bytes(self) -> [u8; 8] {
+    pub fn to_bytes(self) -> [u8; 16] {
         self.value
     }
 
     /// Get the data value of the identifier as a `u64`.
-    pub fn to_u64(self) -> u64 {
-        u64::from_be_bytes(self.value)
+    pub fn to_u128(self) -> u128 {
+        u128::from_be_bytes(self.value)
     }
 
     /// Get the data value of the identifier as an `i64`.
-    pub fn to_i64(self) -> i64 {
-        i64::from_be_bytes(self.value)
+    pub fn to_i128(self) -> i128 {
+        i128::from_be_bytes(self.value)
     }
 
     /// Test to see if the provided string is a valid `Id<T>`.
@@ -124,15 +124,15 @@ impl<T: Type + ?Sized> FromStr for Id<T> {
     }
 }
 
-impl<T: Type + ?Sized> From<Id<T>> for u64 {
+impl<T: Type + ?Sized> From<Id<T>> for u128 {
     fn from(value: Id<T>) -> Self {
-        value.to_u64()
+        value.to_u128()
     }
 }
 
-impl<T: Type + ?Sized> From<Id<T>> for i64 {
+impl<T: Type + ?Sized> From<Id<T>> for i128 {
     fn from(value: Id<T>) -> Self {
-        value.to_i64()
+        value.to_i128()
     }
 }
 
@@ -142,14 +142,14 @@ impl<T: Type + ?Sized> From<Id<T>> for IdBytes {
     }
 }
 
-impl<T: Type + ?Sized> From<u64> for Id<T> {
-    fn from(value: u64) -> Self {
+impl<T: Type + ?Sized> From<u128> for Id<T> {
+    fn from(value: u128) -> Self {
         Self::new(value.to_be_bytes())
     }
 }
 
-impl<T: Type + ?Sized> From<i64> for Id<T> {
-    fn from(value: i64) -> Self {
+impl<T: Type + ?Sized> From<i128> for Id<T> {
+    fn from(value: i128) -> Self {
         Self::new(value.to_be_bytes())
     }
 }
@@ -157,5 +157,13 @@ impl<T: Type + ?Sized> From<i64> for Id<T> {
 impl<T: Type + ?Sized> From<IdBytes> for Id<T> {
     fn from(value: IdBytes) -> Self {
         Self::new(value)
+    }
+}
+
+impl<T: Type + ?Sized> TryFrom<&[u8]> for Id<T> {
+    type Error = Error;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        Ok(Self::new(value.try_into().map_err(|_| Error::InvalidData)?))
     }
 }
