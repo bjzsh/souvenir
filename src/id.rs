@@ -26,7 +26,6 @@ pub type IdBytes = [u8; 16];
 /// let id2: Id<User> = Id::parse("user_02v58c5a3fy30k560qrtg4rb2k").unwrap();
 /// assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4rb2k");
 /// ```
-#[derive(Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
     feature = "diesel",
     derive(::diesel::AsExpression, ::diesel::FromSqlRow)
@@ -85,9 +84,17 @@ impl<T: Type + ?Sized> Id<T> {
         Ok(Self::new(parse_base32(value)?))
     }
 
-    /// Get the prefix of this identifier
-    pub const fn prefix(self) -> &'static str {
+    /// Get the prefix of this identifier.
+    pub fn prefix(self) -> &'static str {
         T::PREFIX
+    }
+
+    /// Cast this Id into an Id of a different type.
+    pub const fn cast<U: Type + ?Sized>(self) -> Id<U> {
+        Id {
+            marker: PhantomData,
+            value: self.value,
+        }
     }
 }
 
@@ -96,6 +103,32 @@ impl<T: Type + ?Sized> Copy for Id<T> {}
 impl<T: Type + ?Sized> Clone for Id<T> {
     fn clone(&self) -> Self {
         *self
+    }
+}
+
+impl<T: Type + ?Sized> std::hash::Hash for Id<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.value.hash(state);
+    }
+}
+
+impl<T: Type + ?Sized> PartialEq for Id<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+
+impl<T: Type + ?Sized> Eq for Id<T> {}
+
+impl<T: Type + ?Sized> PartialOrd for Id<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.cmp(other).into()
+    }
+}
+
+impl<T: Type + ?Sized> Ord for Id<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.value.cmp(&other.value)
     }
 }
 

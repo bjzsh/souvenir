@@ -2,7 +2,6 @@ use crate::Id;
 
 /// A type that can be used in an identifier.
 pub trait Type {
-    /// The prefix for this type
     const PREFIX: &'static str;
 }
 

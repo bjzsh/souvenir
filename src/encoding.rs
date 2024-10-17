@@ -54,7 +54,7 @@ mod test {
     use rand::random;
 
     #[test]
-    fn decode() {
+    fn decode_random() {
         assert_eq!(
             [
                 0x64, 0x29, 0x8e, 0x84, 0xa9, 0x6c, 0x00, 0x00, 0x00, 0x88, 0x64, 0x29, 0x8e, 0x84,
@@ -62,15 +62,10 @@ mod test {
             ],
             parse_base32("3456789abc0000123456789abc").unwrap()
         );
+    }
 
-        assert_eq!(
-            [
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff
-            ],
-            parse_base32("7zzzzzzzzzzzzzzzzzzzzzzzzz").unwrap()
-        );
-
+    #[test]
+    fn decode_min() {
         assert_eq!(
             [
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -78,7 +73,21 @@ mod test {
             ],
             parse_base32("00000000000000000000000000").unwrap()
         );
+    }
 
+    #[test]
+    fn decode_max() {
+        assert_eq!(
+            [
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff
+            ],
+            parse_base32("7zzzzzzzzzzzzzzzzzzzzzzzzz").unwrap()
+        );
+    }
+
+    #[test]
+    fn decode_invalid() {
         parse_base32("80000000000000000000000000").expect_err("should have failed");
     }
 
