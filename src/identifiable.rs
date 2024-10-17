@@ -8,13 +8,14 @@ pub trait Type {
 /// A type which can by identified with an `Id<Self>`.
 pub trait Identifiable
 where
-    Self: Type,
+    Self::Output: Type,
 {
-    fn id(&self) -> Id<Self>;
+    type Output;
+    fn id(&self) -> Id<Self::Output>;
 }
 
-impl<T: Identifiable> From<T> for Id<T> {
-    fn from(value: T) -> Self {
+impl<T: Type, U: Identifiable<Output = T>> From<U> for Id<T> {
+    fn from(value: U) -> Self {
         value.id()
     }
 }
