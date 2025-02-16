@@ -8,6 +8,7 @@ edition = "2021"
 
 [features]
 default = ["rand", "serde"]
+all = ["diesel-postgres", "diesel-mysql", "diesel-sqlite", "rand", "serde", "sqlx-postgres", "sqlx-mysql", "sqlx-sqlite"]
 diesel = ["dep:diesel"]
 diesel-postgres = ["diesel", "diesel/postgres_backend"]
 diesel-mysql = ["diesel", "diesel/mysql_backend"]
@@ -24,3 +25,4 @@ diesel = { version = "2.2.4", optional = true }
 rand = { version = "0.8.5", optional = true }
 serde = { version = "1.0.210", optional = true }
 sqlx = { version = "0.8.2", optional = true }
+
