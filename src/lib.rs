@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod integration;
 mod encoding;
 mod error;
