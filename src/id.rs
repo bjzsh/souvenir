@@ -106,6 +106,12 @@ impl<T: Type + ?Sized> Clone for Id<T> {
     }
 }
 
+impl<T: Type + ?Sized> Default for Id<T> {
+    fn default() -> Self {
+        Self::new(Default::default())
+    }
+}
+
 impl<T: Type + ?Sized> std::hash::Hash for Id<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.value.hash(state);
@@ -200,3 +206,4 @@ impl<T: Type + ?Sized> TryFrom<&[u8]> for Id<T> {
         Ok(Self::new(value.try_into().map_err(|_| Error::InvalidData)?))
     }
 }
+
