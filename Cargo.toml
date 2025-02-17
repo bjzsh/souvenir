@@ -5,6 +5,7 @@ license = "MIT"
 repository = "https://github.com/j5pr/souvenir"
 version = "0.3.3"
 edition = "2021"
+rust-version = "1.61"
 
 [features]
 default = ["rand", "serde"]
