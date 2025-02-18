@@ -1,11 +1,11 @@
 #![forbid(unsafe_code)]
 
-mod integration;
 mod encoding;
 mod error;
 mod generic;
 mod id;
 mod identifiable;
+mod integration;
 
 pub use error::*;
 pub use generic::*;

@@ -18,6 +18,6 @@ impl<'de, T: Type> Deserialize<'de> for Id<T> {
     {
         <String as Deserialize<'de>>::deserialize(deserializer)
             .map(|str| Self::parse(&str))?
-            .map_err(|e| Error::custom(e))
+            .map_err(Error::custom)
     }
 }

@@ -26,7 +26,7 @@ impl Generic {
 
     /// Get the data value of the identifier.
     pub fn as_bytes(&self) -> &[u8; 16] {
-        &self.value.as_bytes()
+        self.value.as_bytes()
     }
 
     /// Get the data value of the identifier.
@@ -112,4 +112,3 @@ mod test {
         assert_eq!(id.to_string(), "test_7zzzzzzzzzzzzzzzzzzzzzzzzz");
     }
 }
-

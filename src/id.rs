@@ -128,7 +128,7 @@ impl<T: Type + ?Sized> Eq for Id<T> {}
 
 impl<T: Type + ?Sized> PartialOrd for Id<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.cmp(other).into()
+        Some(self.cmp(other))
     }
 }
 
@@ -206,4 +206,3 @@ impl<T: Type + ?Sized> TryFrom<&[u8]> for Id<T> {
         Ok(Self::new(value.try_into().map_err(|_| Error::InvalidData)?))
     }
 }
-
