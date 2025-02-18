@@ -56,7 +56,7 @@ jobs:
           rustup update 1.63.0 --no-self-update
           rustup default 1.63.0
       - name: Run tests
-        run: cargo test --verbose --no-default-features
+        run: cargo test --verbose
   lint:
     name: Lint
     runs-on: ubuntu-latest
