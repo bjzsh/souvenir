@@ -4,7 +4,8 @@ use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::str::FromStr;
 
-/// Type of the underlying data stored in an `Id`.
+/// Type of the underlying data stored in an [`Id`], which is an array of
+/// 16 bytes.
 pub type IdBytes = [u8; 16];
 
 /// A typed 128-bit identifier.
@@ -37,7 +38,7 @@ pub struct Id<T: Type + ?Sized> {
 }
 
 impl<T: Type + ?Sized> Id<T> {
-    /// Create a new `Id<T>` with the following underlying value.
+    /// Create a new [`Id<T>`] with the following underlying value.
     pub fn new(value: [u8; 16]) -> Self {
         Self {
             marker: PhantomData,
@@ -55,22 +56,22 @@ impl<T: Type + ?Sized> Id<T> {
         self.value
     }
 
-    /// Get the data value of the identifier as a `u64`.
+    /// Get the data value of the identifier as a [`u64`].
     pub fn to_u128(self) -> u128 {
         u128::from_be_bytes(self.value)
     }
 
-    /// Get the data value of the identifier as an `i64`.
+    /// Get the data value of the identifier as an [`i64`].
     pub fn to_i128(self) -> i128 {
         i128::from_be_bytes(self.value)
     }
 
-    /// Test to see if the provided string is a valid `Id<T>`.
+    /// Test to see if the provided string is a valid [`Id<T>`].
     pub fn test(value: &str) -> bool {
         Self::parse(value).is_ok()
     }
 
-    /// Attempt to parse the provided string into an `Id<T>`.
+    /// Attempt to parse the provided string into an [`Id<T>`].
     pub fn parse(value: &str) -> Result<Self, Error> {
         let (prefix, value) = value.split_once('_').ok_or(Error::InvalidData)?;
 
@@ -89,7 +90,8 @@ impl<T: Type + ?Sized> Id<T> {
         T::PREFIX
     }
 
-    /// Cast this Id into an Id of a different type.
+    /// Cast this [`Id`] into an [`Id`] of a different type. Does not check
+    /// if the target type has the same prefix as this type.
     pub const fn cast<U: Type + ?Sized>(self) -> Id<U> {
         Id {
             marker: PhantomData,

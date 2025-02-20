@@ -9,6 +9,7 @@ impl Type for () {
     const PREFIX: &'static str = "";
 }
 
+/// A runtime-tagged identifier.
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Generic {
     prefix: String,
@@ -34,22 +35,22 @@ impl Generic {
         self.value.to_bytes()
     }
 
-    /// Get the data value of the identifier as a `u64`.
+    /// Get the data value of the identifier as a [`u64`].
     pub fn to_u128(&self) -> u128 {
         self.value.to_u128()
     }
 
-    /// Get the data value of the identifier as an `i64`.
+    /// Get the data value of the identifier as an [`i64`].
     pub fn to_i128(&self) -> i128 {
         self.value.to_i128()
     }
 
-    /// Test to see if the provided string is a valid `Generic`.
+    /// Test to see if the provided string is a valid [`Generic`].
     pub fn test(value: &str) -> bool {
         Self::parse(value).is_ok()
     }
 
-    /// Attempt to parse the provided string into a `Generic`.
+    /// Attempt to parse the provided string into a [`Generic`].
     pub fn parse(value: &str) -> Result<Self, Error> {
         let (prefix, value) = value.split_once('_').ok_or(Error::InvalidData)?;
 
@@ -64,8 +65,21 @@ impl Generic {
         &self.prefix
     }
 
-    /// Cast this Id into an Id of a different type.
-    pub const fn cast<U: Type + ?Sized>(&self) -> Id<U> {
+    /// Cast this [`Generic`] into an [`Id`] of a different type,
+    /// failing if the prefix does not match the prefix of the target type.
+    pub fn cast<U: Type + ?Sized>(&self) -> Result<Id<U>, Error> {
+        if self.prefix != U::PREFIX {
+            return Err(Error::PrefixMismatch {
+                expected: U::PREFIX,
+                actual: self.prefix.clone(),
+            });
+        }
+
+        Ok(self.value.cast())
+    }
+
+    /// Cast this [`Generic`] into an [`Id<U>`] regardless of the prefix.
+    pub const fn cast_unchecked<U: Type + ?Sized>(&self) -> Id<U> {
         self.value.cast()
     }
 }
