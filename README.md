@@ -16,8 +16,8 @@ use souvenir::{Type, Id};
 struct User;
 
 impl Type for User {
-// Specify a prefix for all `Id<User>`
-const PREFIX: &'static str = "user";
+    // Specify a prefix for all `Id<User>`
+    const PREFIX: &'static str = "user";
 }
 
 let id: Id<User> = Id::random();
