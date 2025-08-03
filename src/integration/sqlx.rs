@@ -2,10 +2,10 @@
 mod pg {
     use crate::{Id, Type};
     use sqlx::postgres::{
-        types::Oid, PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgValueFormat, PgValueRef,
-        Postgres,
+        PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgValueFormat, PgValueRef, Postgres,
+        types::Oid,
     };
-    use sqlx::{encode::IsNull, error::BoxDynError, Decode, Encode};
+    use sqlx::{Decode, Encode, encode::IsNull, error::BoxDynError};
 
     impl<T: Type> sqlx::Type<Postgres> for Id<T> {
         fn type_info() -> PgTypeInfo {
@@ -41,7 +41,7 @@ mod pg {
 mod mysql {
     use crate::{Id, Type};
     use sqlx::mysql::{MySql, MySqlTypeInfo, MySqlValueRef};
-    use sqlx::{encode::IsNull, error::BoxDynError, Decode, Encode};
+    use sqlx::{Decode, Encode, encode::IsNull, error::BoxDynError};
 
     impl<T: Type> sqlx::Type<MySql> for Id<T> {
         fn type_info() -> MySqlTypeInfo {
@@ -71,7 +71,7 @@ mod mysql {
 mod sqlite {
     use crate::{Id, Type};
     use sqlx::sqlite::{Sqlite, SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
-    use sqlx::{encode::IsNull, error::BoxDynError, Decode, Encode};
+    use sqlx::{Decode, Encode, encode::IsNull, error::BoxDynError};
     use std::borrow::Cow;
 
     impl<T: Type> sqlx::Type<Sqlite> for Id<T> {

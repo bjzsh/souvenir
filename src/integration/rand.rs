@@ -1,5 +1,5 @@
 use crate::{Id, Type};
-use rand::{random, Rng};
+use rand::{Rng, random};
 
 impl<T: Type> Id<T> {
     /// Generate an [`Id<T>`] with a random value.

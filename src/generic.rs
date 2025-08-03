@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{encoding::parse_base32, Error, Id, Type};
+use crate::{Error, Id, Type, encoding::parse_base32};
 
 impl Type for () {
     const PREFIX: &'static str = "";
