@@ -1,11 +1,24 @@
+[workspace]
+members = ["souvenir-*"]
+resolver = "3"
+
+[workspace.package]
+version = "0.4.1"
+edition = "2024"
+authors = ["Brian Shao"]
+license = "MIT"
+repository = "https://github.com/bjzsh/souvenir"
+
 [package]
 name = "souvenir"
 description = "Prefixed identifier library"
-license = "MIT"
-repository = "https://github.com/j5pr/souvenir"
-version = "0.4.0"
-edition = "2021"
-rust-version = "1.63"
+rust-version = "1.85"
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [features]
 default = ["rand", "serde"]
@@ -26,4 +39,3 @@ diesel = { version = "2.2.7", optional = true }
 rand = { version = "0.9.0", optional = true }
 serde = { version = "1.0.217", optional = true }
 sqlx = { version = "0.8.3", optional = true }
-
