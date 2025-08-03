@@ -142,7 +142,7 @@ impl<T: Type + ?Sized> Ord for Id<T> {
 
 impl<T: Type + ?Sized> Debug for Id<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 

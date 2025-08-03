@@ -96,7 +96,7 @@ mod test {
         for _ in 0..100000 {
             let value: [u8; 16] = random();
             let result = stringify_base32(value).unwrap();
-            let parsed = parse_base32(&*result).unwrap();
+            let parsed = parse_base32(&result).unwrap();
             assert_eq!(value, parsed);
         }
     }
