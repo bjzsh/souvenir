@@ -1,32 +1,32 @@
 #[cfg(feature = "sqlx-postgres")]
 mod pg {
-    use crate::{Id, Type};
+    use crate::Id;
     use sqlx::postgres::{
         PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgValueFormat, PgValueRef, Postgres,
         types::Oid,
     };
-    use sqlx::{Decode, Encode, encode::IsNull, error::BoxDynError};
+    use sqlx::{Decode, Encode, Type, encode::IsNull, error::BoxDynError};
 
-    impl<T: Type> sqlx::Type<Postgres> for Id<T> {
+    impl Type<Postgres> for Id {
         fn type_info() -> PgTypeInfo {
             PgTypeInfo::with_oid(Oid(2950))
         }
     }
 
-    impl<T: Type> PgHasArrayType for Id<T> {
+    impl PgHasArrayType for Id {
         fn array_type_info() -> PgTypeInfo {
             PgTypeInfo::with_oid(Oid(2951))
         }
     }
 
-    impl<T: Type> Encode<'_, Postgres> for Id<T> {
+    impl Encode<'_, Postgres> for Id {
         fn encode_by_ref(&self, buf: &mut PgArgumentBuffer) -> Result<IsNull, BoxDynError> {
             buf.extend_from_slice(self.as_bytes());
             Ok(IsNull::No)
         }
     }
 
-    impl<T: Type> Decode<'_, Postgres> for Id<T> {
+    impl Decode<'_, Postgres> for Id {
         fn decode(value: PgValueRef) -> Result<Self, BoxDynError> {
             match value.format() {
                 PgValueFormat::Binary => Self::try_from(value.as_bytes()?),
@@ -39,11 +39,11 @@ mod pg {
 
 #[cfg(feature = "sqlx-mysql")]
 mod mysql {
-    use crate::{Id, Type};
+    use crate::Id;
     use sqlx::mysql::{MySql, MySqlTypeInfo, MySqlValueRef};
-    use sqlx::{Decode, Encode, encode::IsNull, error::BoxDynError};
+    use sqlx::{Decode, Encode, Type, encode::IsNull, error::BoxDynError};
 
-    impl<T: Type> sqlx::Type<MySql> for Id<T> {
+    impl Type<MySql> for Id {
         fn type_info() -> MySqlTypeInfo {
             <&[u8] as sqlx::Type<MySql>>::type_info()
         }
@@ -53,13 +53,13 @@ mod mysql {
         }
     }
 
-    impl<T: Type> Encode<'_, MySql> for Id<T> {
+    impl Encode<'_, MySql> for Id {
         fn encode_by_ref(&self, buf: &mut Vec<u8>) -> Result<IsNull, BoxDynError> {
             <&[u8] as Encode<'_, MySql>>::encode(self.as_bytes(), buf)
         }
     }
 
-    impl<T: Type> Decode<'_, MySql> for Id<T> {
+    impl Decode<'_, MySql> for Id {
         fn decode(value: MySqlValueRef) -> Result<Self, BoxDynError> {
             let bytes = <&[u8] as Decode<MySql>>::decode(value)?;
             Self::try_from(bytes).map_err(Into::into)
@@ -69,12 +69,12 @@ mod mysql {
 
 #[cfg(feature = "sqlx-sqlite")]
 mod sqlite {
-    use crate::{Id, Type};
+    use crate::Id;
     use sqlx::sqlite::{Sqlite, SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
-    use sqlx::{Decode, Encode, encode::IsNull, error::BoxDynError};
+    use sqlx::{Decode, Encode, Type, encode::IsNull, error::BoxDynError};
     use std::borrow::Cow;
 
-    impl<T: Type> sqlx::Type<Sqlite> for Id<T> {
+    impl Type<Sqlite> for Id {
         fn type_info() -> SqliteTypeInfo {
             <&str as sqlx::Type<Sqlite>>::type_info()
         }
@@ -84,7 +84,7 @@ mod sqlite {
         }
     }
 
-    impl<'q, T: Type> Encode<'q, Sqlite> for Id<T> {
+    impl<'q> Encode<'q, Sqlite> for Id {
         fn encode_by_ref(
             &self,
             args: &mut Vec<SqliteArgumentValue<'q>>,
@@ -94,7 +94,7 @@ mod sqlite {
         }
     }
 
-    impl<T: Type> Decode<'_, Sqlite> for Id<T> {
+    impl Decode<'_, Sqlite> for Id {
         fn decode(value: SqliteValueRef<'_>) -> Result<Self, BoxDynError> {
             <&str as Decode<Sqlite>>::decode(value)?
                 .parse()

@@ -1,14 +1,14 @@
-use crate::{Id, Type};
+use crate::{Error, Id};
 use rand::{Rng, random};
 
-impl<T: Type> Id<T> {
-    /// Generate an [`Id<T>`] with a random value.
-    pub fn random() -> Self {
-        Self::new(random())
+impl Id {
+    /// Generate an [`Id`] with a random value.
+    pub fn random(prefix: &str) -> Result<Self, Error> {
+        Self::from_parts(prefix, random())
     }
 
-    /// Generate a random [`Id<T>`] with the provided RNG.
-    pub fn random_with<R: Rng + ?Sized>(rng: &mut R) -> Self {
-        Self::new(rng.random())
+    /// Generate a random [`Id`] with the provided RNG.
+    pub fn random_with<R: Rng + ?Sized>(prefix: &str, rng: &mut R) -> Result<Self, Error> {
+        Self::from_parts(prefix, rng.random())
     }
 }

@@ -7,12 +7,19 @@ pub enum Error {
     /// an identifier.
     InvalidData,
 
-    /// Thrown when a particular prefix was expected, but an identifier with
-    /// a different prefix was provided.
-    PrefixMismatch {
-        expected: &'static str,
-        actual: String,
-    },
+    /// The provided prefix contains invalid characters or is the wrong length.
+    InvalidPrefix,
+
+    /// The provided input is in an invalid format.
+    InvalidFormat,
+
+    /// Thrown when a string containing an invalid character is attempted to
+    /// be pasrsed into an identifier.
+    InvalidChar,
+
+    /// Thrown when a string of invalid length is attempted to be parsed into
+    /// an identifier.
+    InvalidLength,
 }
 
 impl Display for Error {

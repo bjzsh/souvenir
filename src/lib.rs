@@ -4,37 +4,23 @@
 //!
 //!
 //! The crate primarily provides the [`Id`] struct, which stores a 128-bit
-//! identifier with its corresponding type (tag). The type can be anything that
-//! implements [`Type`].
+//! identifier with its corresponding type (tag).
 //!
 //! The String representation of an [`Id`] is the type's tag and the
-//! 128-bit value encoded into a variant of
+//! random value encoded into a variant of
 //! [Crockford Base 32](https://www.crockford.com/base32.html).
 //!
 //! Here is a simple example of how this crate can be used.
 //!
 //! ```
-//! use souvenir::{Type, Id};
+//! use souvenir::Id;
 //!
-//! struct User;
-//!
-//! impl Type for User {
-//!     // Specify a prefix for all `Id<User>`
-//!     const PREFIX: &'static str = "user";
-//! }
-//!
-//! let id: Id<User> = Id::random();
+//! let id: Id = Id::random("user").unwrap();
 //! println!("{}", id);
 //!
-//! let id2: Id<User> = Id::parse("user_02v58c5a3fy30k560qrtg4rb2k").unwrap();
-//! assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4rb2k");
+//! let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4").unwrap();
+//! assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4");
 //! ```
-//!
-//! If a type-agnostic identifier needs to be stored, the [`Generic`]
-//! struct is available. This can be useful when the type of an identifier is
-//! not known at compile time or can have multiple values. Instances of
-//! [`Generic`] can be safely casted to an instance of [`Id<T>`]
-//! or can be passed around directly.
 //!
 //! Integrations for various libraries and databases are also (optionally)
 //! available:
@@ -46,12 +32,10 @@
 
 mod encoding;
 mod error;
-mod generic;
 mod id;
 mod identifiable;
 mod integration;
 
 pub use error::*;
-pub use generic::*;
 pub use id::*;
 pub use identifiable::*;
