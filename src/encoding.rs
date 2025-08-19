@@ -28,14 +28,14 @@ const ALPHRABET_INV: &[u8; 256] = &{
 };
 
 pub fn decode_id(id: &str) -> Result<[u8; 16], Error> {
-    let (prefix, suffix) = id.rsplit_once('_').ok_or_else(|| Error::InvalidFormat)?;
+    let (prefix, suffix) = id.rsplit_once('_').ok_or(Error::InvalidFormat)?;
     let left = decode_prefix(prefix)?;
     let right = decode_suffix(suffix)?;
     Ok((left | right).to_be_bytes())
 }
 
 pub fn decode_prefix(prefix: &str) -> Result<u128, Error> {
-    if prefix.len() < 1 || prefix.len() > 4 {
+    if prefix.is_empty() || prefix.len() > 4 {
         return Err(Error::InvalidPrefix);
     }
 

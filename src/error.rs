@@ -22,9 +22,22 @@ pub enum Error {
     InvalidLength,
 }
 
+impl Error {
+    /// Get the error message
+    pub fn message(&self) -> &'static str {
+        match self {
+            Self::InvalidData => "InvalidData",
+            Self::InvalidPrefix => "InvalidPrefix",
+            Self::InvalidFormat => "InvalidFormat",
+            Self::InvalidChar => "InvalidChar",
+            Self::InvalidLength => "InvalidLength",
+        }
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:?}")
+        write!(f, "{}", self.message())
     }
 }
 

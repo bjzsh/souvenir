@@ -31,7 +31,7 @@ impl Id {
     /// Create a new [`Id`] with the following bytes.
     /// Will error if the format is not valid.
     pub fn new(value: [u8; 16]) -> Result<Self, Error> {
-        let _ = encode_id(value)?;
+        let _ = encode_prefix(u128::from_be_bytes(value))?;
         Ok(Self::from_bytes_unchecked(value))
     }
 
@@ -69,16 +69,6 @@ impl Id {
         i128::from_be_bytes(self.0)
     }
 
-    /// Test to see if the provided string is a valid [`Id`].
-    pub fn test(value: &str) -> bool {
-        Self::parse(value).is_ok()
-    }
-
-    /// Attempt to parse the provided string into an [`Id`].
-    pub fn parse(value: &str) -> Result<Self, Error> {
-        decode_id(value).map(Self::from_bytes_unchecked)
-    }
-
     /// Get the prefix of this identifier.
     pub fn prefix(self) -> String {
         encode_prefix(self.to_u128()).unwrap()
@@ -92,6 +82,16 @@ impl Id {
     /// Cast this [`Id`] into an [`Id`] with a different prefix.
     pub fn cast(self, prefix: &str) -> Result<Self, Error> {
         Self::from_parts(prefix, self.0)
+    }
+
+    /// Test to see if the provided string is a valid [`Id`].
+    pub fn test(value: &str) -> bool {
+        Self::parse(value).is_ok()
+    }
+
+    /// Attempt to parse the provided string into an [`Id`].
+    pub fn parse(value: &str) -> Result<Self, Error> {
+        decode_id(value).map(Self::from_bytes_unchecked)
     }
 }
 

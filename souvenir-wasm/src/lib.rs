@@ -1,23 +1,37 @@
+use souvenir::Error;
 use wasm_bindgen::prelude::*;
 
-use souvenir::Generic;
+type Value = souvenir::Id;
+
+fn convert_error(err: Error) -> JsError {
+    let message = match err {
+        Error::InvalidData => "InvalidData: The provided data is not a valid Id",
+        Error::InvalidPrefix => "InvalidPrefix: The provided prefix is not valid",
+        Error::InvalidChar => "InvalidChar: The input contains and invalid character",
+        Error::InvalidFormat => "InvalidFormat: The input is not in the correct format",
+        Error::InvalidLength => "InvalidLength: The input has the incorrect length",
+    }
+
+    JsError::new(message)
+}
 
 /// A 128-bit prefixed identifier
 #[wasm_bindgen]
 #[derive(Clone)]
-pub struct Id(Generic);
+pub struct Id(Value);
 
 #[wasm_bindgen]
 impl Id {
     /// Create an `Id` from an array of bytes
     #[wasm_bindgen(constructor)]
-    pub fn new(prefix: String, value: &[u8]) -> Result<Self, JsError> {
-        Ok(Self(Generic::new(
-            prefix,
+    pub fn new(value: &[u8]) -> Result<Self, JsError> {
             value
                 .try_into()
-                .map_err(|_| JsError::new("Invalid value for Id!"))?,
-        )))
+                .map_err(|_| Error::InvalidLength)
+                .map(Value::new)
+                .flatten()
+                .map(|inner| Self(inner))
+                .map_err(convert_error)
     }
 
     /// Convert this `Id` to an array of bytes
@@ -42,6 +56,16 @@ impl Id {
     pub fn prefix(&self) -> String {
         self.0.prefix().to_owned()
     }
+
+    /// Get the suffix of this `Id`
+    pub fn suffix(&self) -> String {
+        self.0.suffix().to_owned()
+    }
+
+    /// Cast this `Id` to a new prefix
+    pub fn cast(&self, prefix: &str) -> Result<Self, JsError> {
+        self.0.cast(prefix).map(|inner| Self(inner)).map_err(convert_error)
+    }
 }
 
 #[wasm_bindgen]
@@ -49,19 +73,18 @@ impl Id {
     /// Generate a random `Id` with the given prefix
     pub fn random(prefix: String) -> Result<Self, JsError> {
         let mut buf = [0u8; 16];
-        getrandom::fill(&mut buf).map_err(|_| JsError::new("Could not generate random bytes"))?;
-        Ok(Self(Generic::new(prefix, buf)))
+        getrandom::fill(&mut buf).map_err(|_| JsError::new("Error: Could not generate random bytes"))?;
+        Value::from_parts(&prefix, buf).map(|inner| Self(inner)).map_err(convert_error)
     }
 
     /// Parse an `Id` from its string representation
     pub fn parse(value: &str) -> Result<Self, JsError> {
-        Ok(Self(Generic::parse(value).map_err(|_| {
-            JsError::new("Could not parse provided Id")
-        })?))
+        Value::parse(value).map(|inner| Self(inner)).map_err(convert_error)
+
     }
 
     /// Check if an `Id` string is well-formatted
     pub fn test(value: &str) -> bool {
-        Generic::test(value)
+        Value::test(value)
     }
 }
