@@ -11,19 +11,12 @@ The String representation of an `Id` is the type's tag and the
 Here is a simple example of how this crate can be used.
 
 ```rs
-use souvenir::{Type, Id};
+use souvenir::Id;
 
-struct User;
-
-impl Type for User {
-    // Specify a prefix for all `Id<User>`
-    const PREFIX: &'static str = "user";
-}
-
-let id: Id<User> = Id::random();
+let id: Id = Id::random("user").unwrap();
 println!("{}", id);
 
-let id2: Id<User> = Id::parse("user_02v58c5a3fy30k560qrtg4rb2k").unwrap();
+let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4rb2k").unwrap();
 assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4rb2k");
 ```
 
