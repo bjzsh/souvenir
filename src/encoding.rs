@@ -15,7 +15,7 @@ const PREFIX_INV: &[u8; 256] = &{
 };
 
 const ALPHABET: &[u8; 32] = b"0123456789abcdefghjkmnpqrstvwxyz";
-const ALPHRABET_INV: &[u8; 256] = &{
+const ALPHABET_INV: &[u8; 256] = &{
     let mut output = [255; 256];
 
     let mut i = 0;
@@ -66,21 +66,29 @@ pub fn decode_prefix(prefix: &str) -> Result<u128, Error> {
     Ok(out << 108)
 }
 
-pub fn decode_suffix(suffix: &str) -> Result<u128, Error> {
-    let mut suffix: [u8; 22] = suffix
+pub fn decode_suffix(str: &str) -> Result<u128, Error> {
+    let mut suffix: [u8; 22] = str
         .as_bytes()
         .try_into()
-        .map_err(|_| Error::InvalidLength)?;
-
-    let mut max = 0;
+        .map_err(|_| Error::InvalidLength {
+            expected: 22,
+            found: str.as_bytes().len(),
+        })?;
 
     for b in &mut suffix {
-        *b = ALPHRABET_INV[*b as usize];
-        max |= *b;
+        let index = ALPHABET_INV[*b as usize];
+
+        if index == 0xff {
+            return Err(Error::InvalidChar { found: *b as char });
+        }
+
+        *b = index;
     }
 
-    if max == 0xff || suffix[0] > 7 {
-        return Err(Error::InvalidChar);
+    if suffix[0] > 7 {
+        return Err(Error::InvalidChar {
+            found: str.chars().nth(0).unwrap(),
+        });
     }
 
     let mut out = 0u128;

@@ -15,22 +15,25 @@ pub enum Error {
 
     /// Thrown when a string containing an invalid character is attempted to
     /// be pasrsed into an identifier.
-    InvalidChar,
+    InvalidChar { found: char },
 
     /// Thrown when a string of invalid length is attempted to be parsed into
     /// an identifier.
-    InvalidLength,
+    InvalidLength { expected: usize, found: usize },
 }
 
 impl Error {
     /// Get the error message
-    pub fn message(&self) -> &'static str {
+    pub fn message(&self) -> String {
         match self {
-            Self::InvalidData => "InvalidData",
-            Self::InvalidPrefix => "InvalidPrefix",
-            Self::InvalidFormat => "InvalidFormat",
-            Self::InvalidChar => "InvalidChar",
-            Self::InvalidLength => "InvalidLength",
+            Self::InvalidData => "input contains invalid data".to_owned(),
+            Self::InvalidPrefix => "prefix is not valid".to_owned(),
+            Self::InvalidFormat => "format is not correct".to_owned(),
+            Self::InvalidChar { found } => format!("invalid character: {}", found),
+            Self::InvalidLength { expected, found } => format!(
+                "input is the wrong length: expected {} but found {}",
+                expected, found
+            ),
         }
     }
 }
