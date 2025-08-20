@@ -72,7 +72,7 @@ pub fn decode_suffix(str: &str) -> Result<u128, Error> {
         .try_into()
         .map_err(|_| Error::InvalidLength {
             expected: 22,
-            found: str.as_bytes().len(),
+            found: str.len(),
         })?;
 
     for b in &mut suffix {
@@ -87,7 +87,7 @@ pub fn decode_suffix(str: &str) -> Result<u128, Error> {
 
     if suffix[0] > 7 {
         return Err(Error::InvalidChar {
-            found: str.chars().nth(0).unwrap(),
+            found: str.chars().next().unwrap(),
         });
     }
 
