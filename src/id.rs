@@ -1,5 +1,7 @@
 use crate::Error;
-use crate::encoding::{decode_id, decode_prefix, encode_id, encode_prefix, encode_suffix};
+use crate::encoding::{
+    decode_id, decode_prefix, encode_id, encode_prefix, encode_suffix, valid_id,
+};
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 
@@ -31,21 +33,24 @@ impl Id {
     /// Create a new [`Id`] with the following bytes.
     /// Will error if the format is not valid.
     pub fn new(value: [u8; 16]) -> Result<Self, Error> {
-        let _ = encode_prefix(u128::from_be_bytes(value))?;
-        Ok(Self::from_bytes_unchecked(value))
+        if valid_id(value) {
+            Ok(Self::from_bytes_unchecked(value))
+        } else {
+            Err(Error::InvalidData)
+        }
     }
 
     /// Create a new [`Id`] given a prefix and suffix.
     /// Note that the upper 20 bits from the suffix are discarded.
     pub fn from_parts(prefix: &str, suffix: [u8; 16]) -> Result<Self, Error> {
         let suffix = u128::from_be_bytes(suffix) & ((1 << 108) - 1);
-        let value = decode_prefix(prefix)? | suffix;
+        let value = ((decode_prefix(prefix)? as u128) << 108) | suffix;
         Ok(Self::from_bytes_unchecked(value.to_be_bytes()))
     }
 
     /// Create a new [`Id`] with the provided raw value.
     /// The value is not checked to be a valid [`Id`].
-    pub fn from_bytes_unchecked(value: [u8; 16]) -> Self {
+    pub const fn from_bytes_unchecked(value: [u8; 16]) -> Self {
         Self(value)
     }
 
@@ -71,7 +76,7 @@ impl Id {
 
     /// Get the prefix of this identifier.
     pub fn prefix(self) -> String {
-        encode_prefix(self.to_u128()).unwrap()
+        encode_prefix((self.to_u128() >> 108) as u32).unwrap()
     }
 
     /// Get the suffix of this identifier.

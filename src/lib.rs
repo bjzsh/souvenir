@@ -36,6 +36,7 @@ mod id;
 mod identifiable;
 mod integration;
 
+pub use encoding::ALPHABET;
 pub use error::*;
 pub use id::*;
 pub use identifiable::*;

@@ -34,9 +34,8 @@ impl Id {
                 expected: 16,
                 found: value.len(),
             })
-            .map(Value::new)
-            .flatten()
-            .map(|inner| Self(inner))
+            .and_then(Value::new)
+            .map(Self)
             .map_err(convert_error)
     }
 
@@ -54,7 +53,7 @@ impl Id {
 
     /// Convert this `Id` to its string representation
     #[wasm_bindgen(js_name = toString)]
-    pub fn to_string(&self) -> String {
+    pub fn wasm_to_string(&self) -> String {
         self.0.to_string()
     }
 
@@ -70,10 +69,7 @@ impl Id {
 
     /// Cast this `Id` to a new prefix
     pub fn cast(&self, prefix: &str) -> Result<Self, JsError> {
-        self.0
-            .cast(prefix)
-            .map(|inner| Self(inner))
-            .map_err(convert_error)
+        self.0.cast(prefix).map(Self).map_err(convert_error)
     }
 }
 
@@ -85,15 +81,13 @@ impl Id {
         getrandom::fill(&mut buf)
             .map_err(|_| JsError::new("Error: Could not generate random bytes"))?;
         Value::from_parts(&prefix, buf)
-            .map(|inner| Self(inner))
+            .map(Self)
             .map_err(convert_error)
     }
 
     /// Parse an `Id` from its string representation
     pub fn parse(value: &str) -> Result<Self, JsError> {
-        Value::parse(value)
-            .map(|inner| Self(inner))
-            .map_err(convert_error)
+        Value::parse(value).map(Self).map_err(convert_error)
     }
 
     /// Check if an `Id` string is well-formatted
