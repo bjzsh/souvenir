@@ -9,7 +9,7 @@ use std::str::FromStr;
 /// 16 bytes. Note that not all possible values represent valid identifiers.
 pub type IdBytes = [u8; 16];
 
-/// A typed 128-bit identifier.
+/// A 128-bit identifier consisting of a 1-4 character tag and 108 random bits.
 ///
 /// ```
 /// use souvenir::Id;
@@ -24,14 +24,16 @@ pub type IdBytes = [u8; 16];
     feature = "diesel",
     derive(::diesel::AsExpression, ::diesel::FromSqlRow)
 )]
-#[cfg_attr(feature = "diesel", diesel(sql_type = ::diesel::sql_types::Int8))]
+#[cfg_attr(feature = "diesel-postgres", diesel(sql_type = ::diesel::sql_types::Uuid))]
+#[cfg_attr(feature = "diesel-mysql", diesel(sql_type = ::diesel::sql_types::Binary))]
+#[cfg_attr(feature = "diesel-sqlite", diesel(sql_type = ::diesel::sql_types::Text))]
 #[derive(Copy, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Id(IdBytes);
 
 impl Id {
-    /// Create a new [`Id`] with the following bytes.
-    /// Will error if the format is not valid.
+    /// Create a new [`Id`] with the following bytes. If the provided bytes do
+    /// not form a valid [`Id`], this method will error.
     pub fn new(value: [u8; 16]) -> Result<Self, Error> {
         if valid_id(value) {
             Ok(Self::from_bytes_unchecked(value))
@@ -40,11 +42,13 @@ impl Id {
         }
     }
 
-    /// Create a new [`Id`] given a prefix and suffix.
-    /// Note that the upper 20 bits from the suffix are discarded.
+    /// Create a new [`Id`] given a prefix and suffix. Note that the upper 20
+    /// bits from the suffix are discarded to make room for the prefix.
     pub fn from_parts(prefix: &str, suffix: [u8; 16]) -> Result<Self, Error> {
+        let prefix = (decode_prefix(prefix)? as u128) << 108;
         let suffix = u128::from_be_bytes(suffix) & ((1 << 108) - 1);
-        let value = ((decode_prefix(prefix)? as u128) << 108) | suffix;
+
+        let value = prefix | suffix;
         Ok(Self::from_bytes_unchecked(value.to_be_bytes()))
     }
 
