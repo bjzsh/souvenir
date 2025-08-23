@@ -1,4 +1,4 @@
-use crate::{Error, Id};
+use crate::{error::Error, id::Id};
 use rand::{Rng, random};
 
 impl Id {

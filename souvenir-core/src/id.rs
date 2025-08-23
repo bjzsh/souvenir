@@ -1,7 +1,7 @@
-use crate::Error;
 use crate::encoding::{
     decode_id, decode_prefix, encode_id, encode_prefix, encode_suffix, valid_id,
 };
+use crate::error::{Error, Result};
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 
@@ -12,8 +12,7 @@ pub type IdBytes = [u8; 16];
 /// A 128-bit identifier consisting of a 1-4 character tag and 108 random bits.
 ///
 /// ```
-/// use souvenir::Id;
-///
+/// # use souvenir_core::id::Id;
 /// let id: Id = Id::random("user").unwrap();
 /// println!("{}", id);
 ///
@@ -24,9 +23,9 @@ pub type IdBytes = [u8; 16];
     feature = "diesel",
     derive(::diesel::AsExpression, ::diesel::FromSqlRow)
 )]
-#[cfg_attr(feature = "diesel-postgres", diesel(sql_type = ::diesel::sql_types::Uuid))]
-#[cfg_attr(feature = "diesel-mysql", diesel(sql_type = ::diesel::sql_types::Binary))]
-#[cfg_attr(feature = "diesel-sqlite", diesel(sql_type = ::diesel::sql_types::Text))]
+#[cfg_attr(all(feature = "diesel", feature = "postgres"), diesel(sql_type = ::diesel::sql_types::Uuid))]
+#[cfg_attr(all(feature = "diesel", feature = "mysql"), diesel(sql_type = ::diesel::sql_types::Binary))]
+#[cfg_attr(all(feature = "diesel", feature = "sqlite"), diesel(sql_type = ::diesel::sql_types::Text))]
 #[derive(Copy, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Id(IdBytes);
@@ -34,7 +33,7 @@ pub struct Id(IdBytes);
 impl Id {
     /// Create a new [`Id`] with the following bytes. If the provided bytes do
     /// not form a valid [`Id`], this method will error.
-    pub fn new(value: [u8; 16]) -> Result<Self, Error> {
+    pub fn new(value: [u8; 16]) -> Result<Self> {
         if valid_id(value) {
             Ok(Self::from_bytes_unchecked(value))
         } else {
@@ -44,7 +43,7 @@ impl Id {
 
     /// Create a new [`Id`] given a prefix and suffix. Note that the upper 20
     /// bits from the suffix are discarded to make room for the prefix.
-    pub fn from_parts(prefix: &str, suffix: [u8; 16]) -> Result<Self, Error> {
+    pub fn from_parts(prefix: &str, suffix: [u8; 16]) -> Result<Self> {
         let prefix = (decode_prefix(prefix)? as u128) << 108;
         let suffix = u128::from_be_bytes(suffix) & ((1 << 108) - 1);
 
@@ -89,7 +88,7 @@ impl Id {
     }
 
     /// Cast this [`Id`] into an [`Id`] with a different prefix.
-    pub fn cast(self, prefix: &str) -> Result<Self, Error> {
+    pub fn cast(self, prefix: &str) -> Result<Self> {
         Self::from_parts(prefix, self.0)
     }
 
@@ -99,7 +98,7 @@ impl Id {
     }
 
     /// Attempt to parse the provided string into an [`Id`].
-    pub fn parse(value: &str) -> Result<Self, Error> {
+    pub fn parse(value: &str) -> Result<Self> {
         decode_id(value).map(Self::from_bytes_unchecked)
     }
 }
@@ -123,7 +122,7 @@ impl Display for Id {
 impl FromStr for Id {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         Self::parse(s)
     }
 }
@@ -149,7 +148,7 @@ impl From<Id> for IdBytes {
 impl TryFrom<u128> for Id {
     type Error = Error;
 
-    fn try_from(value: u128) -> Result<Self, Error> {
+    fn try_from(value: u128) -> Result<Self> {
         Self::new(value.to_be_bytes())
     }
 }
@@ -157,7 +156,7 @@ impl TryFrom<u128> for Id {
 impl TryFrom<i128> for Id {
     type Error = Error;
 
-    fn try_from(value: i128) -> Result<Self, Error> {
+    fn try_from(value: i128) -> Result<Self> {
         Self::new(value.to_be_bytes())
     }
 }
@@ -165,7 +164,7 @@ impl TryFrom<i128> for Id {
 impl TryFrom<IdBytes> for Id {
     type Error = Error;
 
-    fn try_from(value: IdBytes) -> Result<Self, Error> {
+    fn try_from(value: IdBytes) -> Result<Self> {
         Self::new(value)
     }
 }
@@ -173,7 +172,7 @@ impl TryFrom<IdBytes> for Id {
 impl TryFrom<&[u8]> for Id {
     type Error = Error;
 
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(value: &[u8]) -> Result<Self> {
         Self::new(value.try_into().map_err(|_| Error::InvalidData)?)
     }
 }

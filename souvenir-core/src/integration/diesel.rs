@@ -1,6 +1,6 @@
-#[cfg(feature = "diesel-postgres")]
+#[cfg(feature = "postgres")]
 mod pg {
-    use crate::Id;
+    use crate::id::Id;
     use diesel::pg::{Pg, PgValue};
     use diesel::{deserialize, serialize, sql_types::Uuid};
     use std::io::Write;
@@ -20,9 +20,9 @@ mod pg {
     }
 }
 
-#[cfg(feature = "diesel-mysql")]
+#[cfg(feature = "mysql")]
 mod mysql {
-    use crate::Id;
+    use crate::id::Id;
     use diesel::mysql::{Mysql, MysqlValue};
     use diesel::{deserialize, serialize, sql_types::Binary};
     use std::io::Write;
@@ -42,9 +42,9 @@ mod mysql {
     }
 }
 
-#[cfg(feature = "diesel-sqlite")]
+#[cfg(feature = "sqlite")]
 mod sqlite {
-    use crate::Id;
+    use crate::id::Id;
     use diesel::sqlite::{Sqlite, SqliteValue};
     use diesel::{deserialize, serialize, sql_types::Text};
 

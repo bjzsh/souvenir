@@ -1,6 +1,6 @@
-#[cfg(feature = "sqlx-postgres")]
+#[cfg(feature = "postgres")]
 mod pg {
-    use crate::Id;
+    use crate::id::Id;
     use sqlx::postgres::{
         PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgValueFormat, PgValueRef, Postgres,
         types::Oid,
@@ -37,9 +37,9 @@ mod pg {
     }
 }
 
-#[cfg(feature = "sqlx-mysql")]
+#[cfg(feature = "mysql")]
 mod mysql {
-    use crate::Id;
+    use crate::id::Id;
     use sqlx::mysql::{MySql, MySqlTypeInfo, MySqlValueRef};
     use sqlx::{Decode, Encode, Type, encode::IsNull, error::BoxDynError};
 
@@ -67,9 +67,9 @@ mod mysql {
     }
 }
 
-#[cfg(feature = "sqlx-sqlite")]
+#[cfg(feature = "sqlite")]
 mod sqlite {
-    use crate::Id;
+    use crate::id::Id;
     use sqlx::sqlite::{Sqlite, SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
     use sqlx::{Decode, Encode, Type, encode::IsNull, error::BoxDynError};
     use std::borrow::Cow;

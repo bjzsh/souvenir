@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::error::{Error, Result};
 
 pub const PREFIX: &[u8; 32] = b"\xffabcdefghijklmnopqrstuvwxyz\xff\xff\xff\xff\xff";
 const PREFIX_INV: &[u8; 256] = &{
@@ -14,7 +14,7 @@ const PREFIX_INV: &[u8; 256] = &{
     output
 };
 
-pub fn encode_prefix(mut raw: u32) -> Result<String, Error> {
+pub fn encode_prefix(mut raw: u32) -> Result<String> {
     let mut buf = [0u8; 4];
     let mut size = 0;
 
@@ -37,7 +37,7 @@ pub fn encode_prefix(mut raw: u32) -> Result<String, Error> {
     String::from_utf8(buf[..size].to_vec()).map_err(|_| Error::InvalidData)
 }
 
-pub fn decode_prefix(prefix: &str) -> Result<u32, Error> {
+pub fn decode_prefix(prefix: &str) -> Result<u32> {
     let size = prefix.len();
 
     if !(1..=4).contains(&size) {
@@ -84,8 +84,8 @@ pub fn valid_prefix(prefix: u32) -> bool {
 #[cfg(test)]
 mod test {
     use crate::{
-        Error,
         encoding::{PREFIX, decode_prefix, encode_prefix, valid_prefix},
+        error::Error,
     };
 
     #[test]

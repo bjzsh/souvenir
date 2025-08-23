@@ -1,9 +1,9 @@
 use crate::{
-    Error,
     encoding::{ALPHABET, ALPHABET_INV},
+    error::{Error, Result},
 };
 
-pub fn encode_suffix(mut raw: u128) -> Result<String, Error> {
+pub fn encode_suffix(mut raw: u128) -> Result<String> {
     let mut buf = [0; 22];
 
     for b in buf.iter_mut().rev() {
@@ -14,7 +14,7 @@ pub fn encode_suffix(mut raw: u128) -> Result<String, Error> {
     String::from_utf8(buf.to_vec()).map_err(|_| Error::InvalidData)
 }
 
-pub fn decode_suffix(suffix: &str) -> Result<u128, Error> {
+pub fn decode_suffix(suffix: &str) -> Result<u128> {
     if suffix.len() != 22 {
         return Err(Error::InvalidLength {
             expected: 22,

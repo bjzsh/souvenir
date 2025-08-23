@@ -1,6 +1,6 @@
 use crate::{
-    Error,
     encoding::{decode_prefix, decode_suffix, encode_prefix, encode_suffix, valid_prefix},
+    error::Error,
 };
 
 pub fn encode_id(bytes: [u8; 16]) -> Result<String, Error> {
@@ -28,8 +28,8 @@ pub fn valid_id(bytes: [u8; 16]) -> bool {
 #[cfg(test)]
 mod test {
     use crate::{
-        Error,
         encoding::{decode_id, encode_id},
+        error::Error,
     };
 
     #[test]

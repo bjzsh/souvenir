@@ -1,4 +1,4 @@
-use crate::Id;
+use crate::id::Id;
 
 /// A type which can by identified with an [`Id`].
 pub trait Identifiable {

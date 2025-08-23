@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+//! # souvenir
+//!
 //! A type-safe, tagged identifier library.
 //!
 //!
@@ -30,13 +32,15 @@
 //!   [`sqlx`](https://docs.rs/sqlx/latest/sqlx/) and
 //!   [`diesel`](https://docs.rs/diesel/latest/diesel/)
 
-mod encoding;
-mod error;
-mod id;
-mod identifiable;
-mod integration;
+pub use souvenir_core::{encoding::ALPHABET, error::*, id::*, identifiable::*};
 
-pub use encoding::ALPHABET;
-pub use error::*;
-pub use id::*;
-pub use identifiable::*;
+#[cfg(feature = "macros")]
+pub use souvenir_macros::*;
+
+/// Re-exports of the most common imports.
+pub mod prelude {
+    pub use crate::{Id, Identifiable};
+
+    #[cfg(feature = "macros")]
+    pub use crate::id;
+}
