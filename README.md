@@ -16,8 +16,8 @@ use souvenir::Id;
 let id: Id = Id::random("user".parse().unwrap());
 println!("{}", id);
 
-let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4rb2k").unwrap();
-assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4rb2k");
+let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4").unwrap();
+assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4");
 ```
 
 Integrations for various libraries and databases are also (optionally)
