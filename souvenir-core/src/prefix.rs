@@ -24,12 +24,12 @@ impl Prefix {
     /// # Safety
     /// This is potentially unsafe as the rest of the API assumes that the
     /// inner value is valid.
-    pub unsafe fn new_unchecked(value: u32) -> Self {
+    pub const unsafe fn new_unchecked(value: u32) -> Self {
         Self(value)
     }
 
     /// Retrieve the inner [`u32`] value from this [`Prefix`].
-    pub fn to_u32(self) -> u32 {
+    pub const fn to_u32(self) -> u32 {
         self.0
     }
 

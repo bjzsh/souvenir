@@ -32,7 +32,7 @@ pub struct Id(IdBytes);
 
 impl Id {
     /// Create a new [`Id`] with the provided prefix and suffix.
-    pub fn new(prefix: Prefix, suffix: Suffix) -> Self {
+    pub const fn new(prefix: Prefix, suffix: Suffix) -> Self {
         let prefix = (prefix.to_u32() as u128) << 108;
         let suffix = suffix.to_u128();
 
@@ -61,32 +61,32 @@ impl Id {
     }
 
     /// Get the data value of the identifier.
-    pub fn to_bytes(self) -> [u8; 16] {
+    pub const fn to_bytes(self) -> [u8; 16] {
         self.0
     }
 
     /// Get the data value of the identifier as a [`u128`].
-    pub fn to_u128(self) -> u128 {
+    pub const fn to_u128(self) -> u128 {
         u128::from_be_bytes(self.0)
     }
 
     /// Get the data value of the identifier as an [`i128`].
-    pub fn to_i128(self) -> i128 {
+    pub const fn to_i128(self) -> i128 {
         i128::from_be_bytes(self.0)
     }
 
     /// Get the prefix of this identifier.
-    pub fn prefix(self) -> Prefix {
+    pub const fn prefix(self) -> Prefix {
         unsafe { Prefix::new_unchecked((self.to_u128() >> 108) as u32) }
     }
 
     /// Get the suffix of this identifier.
-    pub fn suffix(self) -> Suffix {
+    pub const fn suffix(self) -> Suffix {
         Suffix::new(self.to_u128())
     }
 
     /// Cast this [`Id`] into an [`Id`] with a different prefix.
-    pub fn cast(self, prefix: Prefix) -> Self {
+    pub const fn cast(self, prefix: Prefix) -> Self {
         Self::new(prefix, Suffix::new(u128::from_be_bytes(self.0)))
     }
 

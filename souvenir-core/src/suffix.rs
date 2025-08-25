@@ -16,12 +16,12 @@ impl Suffix {
     const MASK: u128 = (1 << 108) - 1;
 
     /// Create a [`Suffix`] from its inner [`u128`] value.
-    pub fn new(value: u128) -> Self {
+    pub const fn new(value: u128) -> Self {
         Self(value & Self::MASK)
     }
 
     /// Retrieve the inner [`u128`] value from this [`Suffix`].
-    pub fn to_u128(self) -> u128 {
+    pub const fn to_u128(self) -> u128 {
         self.0
     }
 
