@@ -1,36 +1,44 @@
 use crate::{
-    encoding::{decode_prefix, decode_suffix, encode_prefix, encode_suffix, valid_prefix},
-    error::Error,
+    encoding::{decode_prefix, decode_suffix, encode_prefix, encode_suffix, validate_prefix},
+    error::{Error, Result},
+    id::Id,
+    suffix::Suffix,
 };
 
-pub fn encode_id(bytes: [u8; 16]) -> Result<String, Error> {
-    let raw = u128::from_be_bytes(bytes);
+pub fn encode_id(id: Id) -> String {
+    let prefix = encode_prefix(id.prefix());
+    let suffix = encode_suffix(id.suffix());
 
-    let prefix = encode_prefix((raw >> 108) as u32)?;
-    let suffix = encode_suffix(raw & ((1 << 108) - 1))?;
-
-    Ok(format!("{}_{}", prefix, suffix))
+    format!("{}_{}", prefix, suffix)
 }
 
-pub fn decode_id(id: &str) -> Result<[u8; 16], Error> {
+pub fn decode_id(id: &str) -> Result<Id> {
     let (prefix, suffix) = id.rsplit_once('_').ok_or(Error::InvalidFormat)?;
 
-    let left = decode_prefix(prefix).map(|x| (x as u128) << 108)?;
-    let right = decode_suffix(suffix)?;
+    let prefix = decode_prefix(prefix)?;
+    let suffix = decode_suffix(suffix)?;
 
-    Ok((left | right).to_be_bytes())
+    Ok(Id::new(prefix, suffix))
 }
 
-pub fn valid_id(bytes: [u8; 16]) -> bool {
-    valid_prefix((u128::from_be_bytes(bytes) >> 108) as u32)
+pub fn validate_id(bytes: [u8; 16]) -> Result<Id> {
+    let suffix = u128::from_be_bytes(bytes);
+    let prefix = (suffix >> 108) as u32;
+
+    validate_prefix(prefix).map(|prefix| Id::new(prefix, Suffix::new(suffix)))
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        encoding::{decode_id, encode_id},
-        error::Error,
-    };
+    use crate::{error::Error, id::Id};
+
+    fn encode_id(bytes: [u8; 16]) -> String {
+        crate::encoding::encode_id(Id::from_bytes(bytes).unwrap())
+    }
+
+    fn decode_id(id: &str) -> Result<[u8; 16], Error> {
+        crate::encoding::decode_id(id).map(Id::to_bytes)
+    }
 
     #[test]
     fn encode_one() {
@@ -39,7 +47,7 @@ mod test {
             0x6a, 0x04,
         ];
 
-        assert_eq!("user_02v58c5a3fy30k560qrtg4", encode_id(bytes).unwrap())
+        assert_eq!("user_02v58c5a3fy30k560qrtg4", encode_id(bytes))
     }
 
     #[test]

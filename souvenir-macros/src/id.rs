@@ -11,19 +11,18 @@ pub fn id(input: TokenStream) -> TokenStream {
         let bytes = id.to_bytes();
 
         return quote! {
-            ::souvenir::Id::from_bytes_unchecked([#(#bytes,)*])
+            unsafe { ::souvenir::Id::from_bytes_unchecked([#(#bytes,)*]) }
         }
         .into();
     }
 
     if let Ok(prefix) = decode_prefix(&value) {
-        let prefix = prefix as u128;
+        let prefix = prefix.to_u32();
 
         return quote! {
-            ::souvenir::Id::from_bytes_unchecked(
-                (#prefix | (::rand::random::<u128>() & ((1 << 108) - 1)))
-                    .to_be_bytes()
-            )
+            ::souvenir::Id::random(unsafe {
+                ::souvenir::Prefix::new_unchecked(#prefix)
+            })
         }
         .into();
     }

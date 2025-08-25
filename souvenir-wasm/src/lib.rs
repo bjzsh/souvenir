@@ -1,4 +1,4 @@
-use souvenir::Error;
+use souvenir::{Error, Prefix, Suffix};
 use wasm_bindgen::prelude::*;
 
 type Value = souvenir::Id;
@@ -34,7 +34,7 @@ impl Id {
                 expected: 16,
                 found: value.len(),
             })
-            .and_then(Value::new)
+            .and_then(Value::from_bytes)
             .map(Self)
             .map_err(convert_error)
     }
@@ -59,28 +59,33 @@ impl Id {
 
     /// Get the prefix of this `Id`
     pub fn prefix(&self) -> String {
-        self.0.prefix().to_owned()
+        self.0.prefix().to_string()
     }
 
     /// Get the suffix of this `Id`
     pub fn suffix(&self) -> String {
-        self.0.suffix().to_owned()
+        self.0.suffix().to_string()
     }
 
     /// Cast this `Id` to a new prefix
     pub fn cast(&self, prefix: &str) -> Result<Self, JsError> {
-        self.0.cast(prefix).map(Self).map_err(convert_error)
+        Prefix::parse(prefix)
+            .map(|prefix| self.0.cast(prefix))
+            .map(Self)
+            .map_err(convert_error)
     }
 }
 
 #[wasm_bindgen]
 impl Id {
     /// Generate a random `Id` with the given prefix
-    pub fn random(prefix: String) -> Result<Self, JsError> {
+    pub fn random(prefix: &str) -> Result<Self, JsError> {
         let mut buf = [0u8; 16];
         getrandom::fill(&mut buf)
             .map_err(|_| JsError::new("Error: Could not generate random bytes"))?;
-        Value::from_parts(&prefix, buf)
+
+        Prefix::parse(prefix)
+            .map(|prefix| Value::new(prefix, Suffix::new(u128::from_be_bytes(buf))))
             .map(Self)
             .map_err(convert_error)
     }

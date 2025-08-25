@@ -1,4 +1,7 @@
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    prefix::Prefix,
+};
 
 pub const PREFIX: &[u8; 32] = b"\xffabcdefghijklmnopqrstuvwxyz\xff\xff\xff\xff\xff";
 const PREFIX_INV: &[u8; 256] = &{
@@ -14,7 +17,9 @@ const PREFIX_INV: &[u8; 256] = &{
     output
 };
 
-pub fn encode_prefix(mut raw: u32) -> Result<String> {
+pub fn encode_prefix(prefix: Prefix) -> String {
+    let mut raw = prefix.to_u32();
+
     let mut buf = [0u8; 4];
     let mut size = 0;
 
@@ -30,14 +35,11 @@ pub fn encode_prefix(mut raw: u32) -> Result<String> {
         size += 1;
     }
 
-    if size < 1 {
-        return Err(Error::InvalidData);
-    }
-
-    String::from_utf8(buf[..size].to_vec()).map_err(|_| Error::InvalidData)
+    // UNSAFE: All bytes are guaranteed to be in ASCII range.
+    unsafe { String::from_utf8_unchecked(buf[..size].to_vec()) }
 }
 
-pub fn decode_prefix(prefix: &str) -> Result<u32> {
+pub fn decode_prefix(prefix: &str) -> Result<Prefix> {
     let size = prefix.len();
 
     if !(1..=4).contains(&size) {
@@ -57,10 +59,11 @@ pub fn decode_prefix(prefix: &str) -> Result<u32> {
             }
         })
         .map(|result| result << ((4 - size) * 5))
+        .map(|result| unsafe { Prefix::new_unchecked(result) })
 }
 
 #[allow(clippy::overly_complex_bool_expr)]
-pub fn valid_prefix(prefix: u32) -> bool {
+pub fn validate_prefix(prefix: u32) -> Result<Prefix> {
     let a = prefix >> 15;
     let b = (prefix >> 10) & 0x1f;
     let c = (prefix >> 5) & 0x1f;
@@ -71,29 +74,38 @@ pub fn valid_prefix(prefix: u32) -> bool {
         || (a != 0 && b != 0 && c == 0 && d == 0)
         || (a != 0 && b == 0 && c == 0 && d == 0))
     {
-        return false;
+        return Err(Error::InvalidData);
     }
 
     if a > 26 || b > 26 || c > 26 || d > 26 {
-        return false;
+        return Err(Error::InvalidData);
     }
 
-    true
+    Ok(unsafe { Prefix::new_unchecked(prefix) })
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
-        encoding::{PREFIX, decode_prefix, encode_prefix, valid_prefix},
-        error::Error,
+        encoding::{PREFIX, validate_prefix},
+        error::{Error, Result},
+        prefix::Prefix,
     };
+
+    fn encode_prefix(raw: u32) -> String {
+        crate::encoding::encode_prefix(Prefix::new(raw).unwrap())
+    }
+
+    fn decode_prefix(str: &str) -> Result<u32> {
+        crate::encoding::decode_prefix(str).map(Prefix::to_u32)
+    }
 
     #[test]
     fn encode_smoke() {
-        assert_eq!("user", encode_prefix(0b10101_10011_00101_10010).unwrap());
-        assert_eq!("use", encode_prefix(0b10101_10011_00101_00000).unwrap());
-        assert_eq!("us", encode_prefix(0b10101_10011_00000_00000).unwrap());
-        assert_eq!("u", encode_prefix(0b10101_00000_00000_00000).unwrap());
+        assert_eq!("user", encode_prefix(0b10101_10011_00101_10010));
+        assert_eq!("use", encode_prefix(0b10101_10011_00101_00000));
+        assert_eq!("us", encode_prefix(0b10101_10011_00000_00000));
+        assert_eq!("u", encode_prefix(0b10101_00000_00000_00000));
     }
 
     #[test]
@@ -108,8 +120,7 @@ mod test {
         }
 
         for i in 0..(1 << 20) {
-            if !valid_prefix(i) {
-                assert_eq!(Err(Error::InvalidData), encode_prefix(i));
+            if validate_prefix(i).is_err() {
                 continue;
             }
 
@@ -119,13 +130,13 @@ mod test {
             let d = i & 0x1f;
 
             assert_eq!(
-                Ok(format!(
+                format!(
                     "{}{}{}{}",
                     format_one(a),
                     format_one(b),
                     format_one(c),
                     format_one(d),
-                )),
+                ),
                 encode_prefix(i),
             );
         }

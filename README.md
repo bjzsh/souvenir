@@ -13,7 +13,7 @@ Here is a simple example of how this crate can be used.
 ```rs
 use souvenir::Id;
 
-let id: Id = Id::random("user").unwrap();
+let id: Id = Id::random("user".parse().unwrap());
 println!("{}", id);
 
 let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4rb2k").unwrap();
@@ -28,4 +28,3 @@ available:
 - Postgres, MySQL, and Sqlite support with
   [`sqlx`](https://docs.rs/sqlx/latest/sqlx/) and
   [`diesel`](https://docs.rs/diesel/latest/diesel/)
-

@@ -1,7 +1,7 @@
-use crate::encoding::{
-    decode_id, decode_prefix, encode_id, encode_prefix, encode_suffix, valid_id,
-};
+use crate::encoding::{decode_id, encode_id, validate_id};
 use crate::error::{Error, Result};
+use crate::prefix::Prefix;
+use crate::suffix::Suffix;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 
@@ -13,7 +13,7 @@ pub type IdBytes = [u8; 16];
 ///
 /// ```
 /// # use souvenir_core::id::Id;
-/// let id: Id = Id::random("user").unwrap();
+/// let id: Id = Id::random("user".parse().unwrap());
 /// println!("{}", id);
 ///
 /// let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4").unwrap();
@@ -26,34 +26,32 @@ pub type IdBytes = [u8; 16];
 #[cfg_attr(all(feature = "diesel", feature = "postgres"), diesel(sql_type = ::diesel::sql_types::Uuid))]
 #[cfg_attr(all(feature = "diesel", feature = "mysql"), diesel(sql_type = ::diesel::sql_types::Binary))]
 #[cfg_attr(all(feature = "diesel", feature = "sqlite"), diesel(sql_type = ::diesel::sql_types::Text))]
-#[derive(Copy, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Id(IdBytes);
 
 impl Id {
-    /// Create a new [`Id`] with the following bytes. If the provided bytes do
-    /// not form a valid [`Id`], this method will error.
-    pub fn new(value: [u8; 16]) -> Result<Self> {
-        if valid_id(value) {
-            Ok(Self::from_bytes_unchecked(value))
-        } else {
-            Err(Error::InvalidData)
-        }
+    /// Create a new [`Id`] with the provided prefix and suffix.
+    pub fn new(prefix: Prefix, suffix: Suffix) -> Self {
+        let prefix = (prefix.to_u32() as u128) << 108;
+        let suffix = suffix.to_u128();
+
+        unsafe { Self::from_bytes_unchecked((prefix | suffix).to_be_bytes()) }
     }
 
-    /// Create a new [`Id`] given a prefix and suffix. Note that the upper 20
-    /// bits from the suffix are discarded to make room for the prefix.
-    pub fn from_parts(prefix: &str, suffix: [u8; 16]) -> Result<Self> {
-        let prefix = (decode_prefix(prefix)? as u128) << 108;
-        let suffix = u128::from_be_bytes(suffix) & ((1 << 108) - 1);
-
-        let value = prefix | suffix;
-        Ok(Self::from_bytes_unchecked(value.to_be_bytes()))
+    /// Create a new [`Id`] with the following bytes. If the provided bytes do
+    /// not form a valid [`Id`], this method will error.
+    pub fn from_bytes(value: [u8; 16]) -> Result<Self> {
+        validate_id(value)
     }
 
     /// Create a new [`Id`] with the provided raw value.
     /// The value is not checked to be a valid [`Id`].
-    pub const fn from_bytes_unchecked(value: [u8; 16]) -> Self {
+    ///
+    /// # Safety
+    /// This method is unsafe because the API assumes that the provided value
+    /// is valid in order to provide memory safety.
+    pub const unsafe fn from_bytes_unchecked(value: [u8; 16]) -> Self {
         Self(value)
     }
 
@@ -78,18 +76,18 @@ impl Id {
     }
 
     /// Get the prefix of this identifier.
-    pub fn prefix(self) -> String {
-        encode_prefix((self.to_u128() >> 108) as u32).unwrap()
+    pub fn prefix(self) -> Prefix {
+        unsafe { Prefix::new_unchecked((self.to_u128() >> 108) as u32) }
     }
 
     /// Get the suffix of this identifier.
-    pub fn suffix(self) -> String {
-        encode_suffix(self.to_u128()).unwrap()
+    pub fn suffix(self) -> Suffix {
+        Suffix::new(self.to_u128())
     }
 
     /// Cast this [`Id`] into an [`Id`] with a different prefix.
-    pub fn cast(self, prefix: &str) -> Result<Self> {
-        Self::from_parts(prefix, self.0)
+    pub fn cast(self, prefix: Prefix) -> Self {
+        Self::new(prefix, Suffix::new(u128::from_be_bytes(self.0)))
     }
 
     /// Test to see if the provided string is a valid [`Id`].
@@ -99,7 +97,7 @@ impl Id {
 
     /// Attempt to parse the provided string into an [`Id`].
     pub fn parse(value: &str) -> Result<Self> {
-        decode_id(value).map(Self::from_bytes_unchecked)
+        decode_id(value)
     }
 }
 
@@ -111,11 +109,13 @@ impl Debug for Id {
 
 impl Display for Id {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            encode_id(self.0).expect("Id could not be serialized correctly")
-        )
+        write!(f, "{}", encode_id(*self))
+    }
+}
+
+impl Default for Id {
+    fn default() -> Self {
+        Self::new(Prefix::default(), Suffix::default())
     }
 }
 
@@ -149,7 +149,7 @@ impl TryFrom<u128> for Id {
     type Error = Error;
 
     fn try_from(value: u128) -> Result<Self> {
-        Self::new(value.to_be_bytes())
+        Self::from_bytes(value.to_be_bytes())
     }
 }
 
@@ -157,7 +157,7 @@ impl TryFrom<i128> for Id {
     type Error = Error;
 
     fn try_from(value: i128) -> Result<Self> {
-        Self::new(value.to_be_bytes())
+        Self::from_bytes(value.to_be_bytes())
     }
 }
 
@@ -165,7 +165,7 @@ impl TryFrom<IdBytes> for Id {
     type Error = Error;
 
     fn try_from(value: IdBytes) -> Result<Self> {
-        Self::new(value)
+        Self::from_bytes(value)
     }
 }
 
@@ -173,6 +173,6 @@ impl TryFrom<&[u8]> for Id {
     type Error = Error;
 
     fn try_from(value: &[u8]) -> Result<Self> {
-        Self::new(value.try_into().map_err(|_| Error::InvalidData)?)
+        Self::from_bytes(value.try_into().map_err(|_| Error::InvalidData)?)
     }
 }

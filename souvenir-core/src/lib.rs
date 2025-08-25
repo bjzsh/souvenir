@@ -1,5 +1,3 @@
-#![forbid(unsafe_code)]
-
 //! # souvenir_core
 //!
 //! This crate contains implementation details for
@@ -11,3 +9,5 @@ pub mod error;
 pub mod id;
 pub mod identifiable;
 pub mod integration;
+pub mod prefix;
+pub mod suffix;
