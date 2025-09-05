@@ -6,8 +6,8 @@ pub trait Identifiable {
     fn id(&self) -> Id;
 }
 
-impl<T: Identifiable> From<T> for Id {
-    fn from(value: T) -> Self {
-        value.id()
+impl Identifiable for Id {
+    fn id(&self) -> Id {
+        *self
     }
 }

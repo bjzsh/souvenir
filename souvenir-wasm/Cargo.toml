@@ -12,9 +12,7 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = [
-    "-Os",
-]
+wasm-opt = ["-Os"]
 
 [dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
