@@ -11,6 +11,7 @@ extern crate proc_macro;
 mod id;
 mod identifiable;
 mod prefix;
+mod tagged;
 
 use proc_macro::TokenStream;
 
@@ -22,12 +23,19 @@ use proc_macro::TokenStream;
 /// be generated at runtime.
 ///
 /// ```
-/// # use souvenir::{id, Id};
+/// # use souvenir::{id, Id, Tagged};
 /// let id: Id = id!("user_02v58c5a3fy30k560qrtg4");
 /// assert_eq!(id, "user_02v58c5a3fy30k560qrtg4".parse().unwrap());
 ///
 /// let id2: Id = id!("user");
-/// assert_eq!(id.prefix().to_string(), "user");
+/// assert_eq!(id2.prefix().to_string(), "user");
+///
+/// #[derive(Tagged)]
+/// #[souvenir(tag = "user")]
+/// struct User;
+///
+/// let id3: Id = id!(User);
+/// assert_eq!(id3.prefix().to_string(), "user");
 /// ```
 #[proc_macro]
 pub fn id(input: TokenStream) -> TokenStream {
@@ -67,4 +75,20 @@ pub fn prefix(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Identifiable, attributes(souvenir))]
 pub fn identifiable(input: TokenStream) -> TokenStream {
     identifiable::identifiable(input)
+}
+
+/// Automatically implement `Tagged`.
+///
+/// ```
+/// # use souvenir::{id, prefix, Id, Tagged};
+///
+/// #[derive(Tagged)]
+/// #[souvenir(tag = "user")]
+/// struct User;
+///
+/// assert_eq!(User::PREFIX, prefix!("user"));
+/// ```
+#[proc_macro_derive(Tagged, attributes(souvenir))]
+pub fn tagged(input: TokenStream) -> TokenStream {
+    tagged::tagged(input)
 }

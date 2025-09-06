@@ -1,28 +1,53 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use souvenir_core::{encoding::decode_prefix, id::Id};
-use syn::{LitStr, parse_macro_input};
+use syn::{LitStr, Path, parse::Parse, parse_macro_input};
+
+enum IdInput {
+    Literal(LitStr),
+    Tagged(Path),
+}
+
+impl Parse for IdInput {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(if input.peek(LitStr) {
+            Self::Literal(input.parse()?)
+        } else {
+            Self::Tagged(input.parse()?)
+        })
+    }
+}
 
 pub fn id(input: TokenStream) -> TokenStream {
-    let literal = parse_macro_input!(input as LitStr);
-    let value = literal.value();
+    let input = parse_macro_input!(input as IdInput);
 
-    if let Ok(id) = Id::parse(&value) {
-        let bytes = id.to_bytes();
+    if let IdInput::Literal(ref literal) = input {
+        let value = literal.value();
 
-        return quote! {
-            unsafe { ::souvenir::Id::from_bytes_unchecked([#(#bytes,)*]) }
+        if let Ok(id) = Id::parse(&value) {
+            let bytes = id.to_bytes();
+
+            return quote! {
+                unsafe { ::souvenir::Id::from_bytes_unchecked([#(#bytes,)*]) }
+            }
+            .into();
         }
-        .into();
+
+        if let Ok(prefix) = decode_prefix(&value) {
+            let prefix = prefix.to_u32();
+
+            return quote! {
+                ::souvenir::Id::random(unsafe {
+                    ::souvenir::Prefix::new_unchecked(#prefix)
+                })
+            }
+            .into();
+        }
     }
 
-    if let Ok(prefix) = decode_prefix(&value) {
-        let prefix = prefix.to_u32();
-
+    if let IdInput::Tagged(ref path) = input {
         return quote! {
-            ::souvenir::Id::random(unsafe {
-                ::souvenir::Prefix::new_unchecked(#prefix)
-            })
+            ::souvenir::Id::random(<#path as ::souvenir::Tagged>::PREFIX)
         }
         .into();
     }

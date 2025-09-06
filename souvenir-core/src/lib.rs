@@ -11,3 +11,4 @@ pub mod identifiable;
 pub mod integration;
 pub mod prefix;
 pub mod suffix;
+pub mod tagged;

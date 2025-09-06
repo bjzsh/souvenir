@@ -33,7 +33,7 @@
 //!   [`diesel`](https://docs.rs/diesel/latest/diesel/)
 
 pub use souvenir_core::{
-    encoding::ALPHABET, error::*, id::*, identifiable::*, prefix::*, suffix::*,
+    encoding::ALPHABET, error::*, id::*, identifiable::*, prefix::*, suffix::*, tagged::*,
 };
 
 #[cfg(feature = "macros")]
@@ -41,7 +41,7 @@ pub use souvenir_macros::*;
 
 /// Re-exports of the most common imports.
 pub mod prelude {
-    pub use crate::{Id, Identifiable, Prefix, Suffix};
+    pub use crate::{Id, Identifiable, Prefix, Suffix, Tagged};
 
     #[cfg(feature = "macros")]
     pub use crate::{id, prefix};
