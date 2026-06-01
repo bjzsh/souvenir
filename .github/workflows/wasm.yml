@@ -1,0 +1,37 @@
+name: WASM package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Install JavaScript dependencies
+        working-directory: souvenir-wasm
+        run: bun install --frozen-lockfile
+      - name: Install Binaryen
+        run: sudo apt-get update && sudo apt-get install -y binaryen
+      - name: Build package
+        working-directory: souvenir-wasm
+        run: bun run build
+      - name: Test JavaScript API
+        working-directory: souvenir-wasm
+        run: bun run test
+      - name: Pack package
+        working-directory: souvenir-wasm/dist
+        run: bun pm pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: souvenir-js
+          path: souvenir-wasm/dist/*.tgz

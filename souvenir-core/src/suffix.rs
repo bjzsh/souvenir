@@ -59,6 +59,24 @@ impl From<Suffix> for u128 {
 
 impl From<u128> for Suffix {
     fn from(value: u128) -> Self {
-        Self(value)
+        Self::new(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Suffix;
+    use crate::{id::Id, prefix::Prefix};
+
+    #[test]
+    fn conversion_masks_high_bits_and_preserves_prefix() {
+        let prefix = Prefix::parse("user").unwrap();
+        for value in [0, 1 << 108, u128::MAX] {
+            let suffix = Suffix::from(value);
+            assert_eq!(suffix.to_u128(), value & ((1 << 108) - 1));
+            let id = Id::new(prefix, suffix);
+            assert_eq!(id.prefix(), prefix);
+            assert_eq!(Id::parse(&id.to_string()), Ok(id));
+        }
     }
 }

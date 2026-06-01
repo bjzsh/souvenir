@@ -26,14 +26,15 @@ pub fn decode_suffix(suffix: &str) -> Result<Suffix> {
     }
 
     suffix
-        .as_bytes()
-        .iter()
-        .enumerate()
-        .try_fold(0u128, |acc, (i, &ch)| {
+        .char_indices()
+        .try_fold(0u128, |acc, (i, ch)| {
+            if !ch.is_ascii() {
+                return Err(Error::InvalidChar { found: ch });
+            }
             let value = ALPHABET_INV[ch as usize];
 
             if value == 0xff || (i == 0 && value > 7) {
-                return Err(Error::InvalidChar { found: ch as char });
+                return Err(Error::InvalidChar { found: ch });
             }
 
             Ok((acc << 5) | value as u128)
@@ -48,6 +49,24 @@ mod test {
         suffix::Suffix,
     };
     use rand::random;
+
+    #[test]
+    fn unicode_errors_report_characters_and_byte_lengths() {
+        for ch in ['é', '€', '🦀'] {
+            let suffix = format!("0{ch}{}", "0".repeat(21 - ch.len_utf8()));
+            assert_eq!(
+                decode_suffix(&suffix),
+                Err(crate::error::Error::InvalidChar { found: ch })
+            );
+        }
+        assert_eq!(
+            decode_suffix("é"),
+            Err(crate::error::Error::InvalidLength {
+                expected: 22,
+                found: 2
+            })
+        );
+    }
 
     #[test]
     fn decode_smoke() {

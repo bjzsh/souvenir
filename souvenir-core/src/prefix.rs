@@ -41,7 +41,7 @@ impl Prefix {
 
 impl Default for Prefix {
     fn default() -> Self {
-        Self(0b01001_00100_00000_00000_00000)
+        Self(0b01001_00100_00000_00000)
     }
 }
 
@@ -76,5 +76,20 @@ impl TryFrom<u32> for Prefix {
 
     fn try_from(value: u32) -> std::result::Result<Self, Self::Error> {
         Self::new(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Prefix;
+    use crate::id::Id;
+
+    #[test]
+    fn default_is_valid_id_prefix() {
+        let prefix = Prefix::default();
+        assert_eq!(Prefix::new(prefix.to_u32()), Ok(prefix));
+        assert_eq!(prefix.to_string(), "id");
+        assert_eq!(Id::default().prefix(), prefix);
+        assert_eq!(Id::default().to_string(), "id_0000000000000000000000");
     }
 }

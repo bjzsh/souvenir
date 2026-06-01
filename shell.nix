@@ -10,8 +10,8 @@ in
       ])
 
       sqlx-cli
-      wasm-pack
-      wasm-bindgen-cli_0_2_100
+      nodejs_22
+      bun
       binaryen
 
       jq
