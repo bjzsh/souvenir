@@ -9,10 +9,10 @@ type ErrorDetails<T = SouvenirError> = T extends Error ? Omit<T, keyof Error> : 
 const text = 'user_02v58c5a3fy30k560qrtg4';
 const suffix = '02v58c5a3fy30k560qrtg4';
 const bytes = new Uint8Array([
-  0xac, 0xcb, 0x20, 0x2d, 0x95, 0x0c, 0x2a, 0x86,
-  0xff, 0x0c, 0x13, 0x29, 0x81, 0x7c, 0x6a, 0x04,
+  0xcb, 0xce, 0xe7, 0xb6, 0x95, 0xfe, 0x09, 0x7e,
+  0x9d, 0x18, 0xec, 0x46, 0xbc, 0x97, 0xfe, 0x46,
 ]);
-const bigint = 0xaccb202d950c2a86ff0c1329817c6a04n;
+const bigint = 0xcbcee7b695fe097e9d18ec46bc97fe46n;
 const allocated: Id[] = [];
 const keep = (id: Id): Id => (allocated.push(id), id);
 afterEach(() => {
@@ -60,16 +60,16 @@ describe('Id values', () => {
     expect(id).not.toBe(copy);
     expect(id.equals(copy)).toBe(true);
     expect(copy.equals(id)).toBe(true);
-    expect(id.equals(keep(id.cast('team')))).toBe(false);
+    expect(id.equals(keep(id.withPrefix('team')))).toBe(false);
     expect(id.equals(keep(Id.parse('user_' + '0'.repeat(22))))).toBe(false);
   });
 
-  test('cast returns a new value and preserves the original', () => {
+  test('withPrefix returns a new value and preserves the original', () => {
     const id = keep(Id.parse(text));
-    const cast = keep(id.cast('team'));
-    expect(cast.toString()).toBe(`team_${suffix}`);
+    const updated = keep(id.withPrefix('team'));
+    expect(updated.toString()).toBe(`team_${suffix}`);
     expect(id.toString()).toBe(text);
-    expectError(() => id.cast('invalid'), { code: 'InvalidPrefix' });
+    expectError(() => id.withPrefix('invalid'), { code: 'InvalidPrefix' });
     expect(id.toString()).toBe(text);
   });
 
@@ -125,10 +125,24 @@ describe('conversions', () => {
     }, { code: 'InvalidType' });
   });
 
-  test('validates encoded prefixes even when the numeric value is in range', () => {
-    expectError(() => Id.fromBigInt(0n), { code: 'InvalidData' });
-    expectError(() => Id.fromBigInt((1n << 128n) - 1n), { code: 'InvalidData' });
-    expectError(() => Id.fromBytes(new Uint8Array(16)), { code: 'InvalidData' });
+  test('accepts the zero and maximum binary values', () => {
+    for (const value of [0n, 1n, (1n << 128n) - 1n]) {
+      const id = keep(Id.fromBigInt(value));
+      expect(id.toBigInt()).toBe(value);
+      expect(keep(Id.parse(id.toString())).equals(id)).toBe(true);
+    }
+    expect(keep(Id.fromBytes(new Uint8Array(16))).toString()).toBe('a_' + '0'.repeat(22));
+    expect(keep(Id.fromBigInt((1n << 128n) - 1n)).toString()).toBe('zzzz_hmtd1hxh33gedanpsmt9qk');
+  });
+
+  test('checks the prefix-dependent suffix boundary', () => {
+    const id = keep(Id.parse('zgsv_hmtd1hxh33gedanpsmt9qm'));
+    expect(id.suffix).toBe('hmtd1hxh33gedanpsmt9qm');
+    expectError(() => id.withPrefix('zgsw'), { code: 'InvalidData' });
+    expectError(() => Id.parse('zgsw_hmtd1hxh33gedanpsmt9qm'), { code: 'InvalidData' });
+    expectError(() => Id.parse('a_' + 'z'.repeat(22)), { code: 'InvalidData' });
+    expect(keep(keep(Id.parse('zgsv_hmtd1hxh33gedanpsmt9qk')).withPrefix('zgsw')).toString())
+      .toBe('zgsw_hmtd1hxh33gedanpsmt9qk');
   });
 });
 
@@ -168,7 +182,7 @@ describe('JavaScript input boundaries', () => {
         // @ts-expect-error Deliberately exercise invalid JavaScript inputs.
         () => Id.random(value),
         // @ts-expect-error Deliberately exercise invalid JavaScript inputs.
-        () => id.cast(value),
+        () => id.withPrefix(value),
       ]) expectError(action, { code: 'InvalidType' });
       expect(id.toString()).toBe(text);
     },

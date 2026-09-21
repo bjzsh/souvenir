@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    encoding::{decode_prefix, encode_prefix, validate_prefix},
+    encoding::{PREFIX_COUNT, decode_prefix, encode_prefix},
     error::{Error, Result},
 };
 
@@ -15,15 +15,18 @@ pub struct Prefix(u32);
 impl Prefix {
     /// Create a [`Prefix`] from its inner [`u32`] value.
     /// If the provided value is not valid, this will error.
-    pub fn new(value: u32) -> Result<Self> {
-        validate_prefix(value)
+    pub const fn new(value: u32) -> Result<Self> {
+        if value < PREFIX_COUNT {
+            Ok(Self(value))
+        } else {
+            Err(Error::InvalidData)
+        }
     }
 
     /// Create a [`Prefix`] from its inner [`u32`] value.
     ///
     /// # Safety
-    /// This is potentially unsafe as the rest of the API assumes that the
-    /// inner value is valid.
+    /// The value must be a valid dictionary-order rank: less than 475254.
     pub const unsafe fn new_unchecked(value: u32) -> Self {
         Self(value)
     }
@@ -34,14 +37,19 @@ impl Prefix {
     }
 
     /// Attempt to parse the provided string into a [`Prefix`]
-    pub fn parse(prefix: &str) -> Result<Self> {
+    pub const fn parse(prefix: &str) -> Result<Self> {
         decode_prefix(prefix)
     }
 }
 
 impl Default for Prefix {
-    fn default() -> Self {
-        Self(0b01001_00100_00000_00000)
+    fn default() -> Prefix {
+        const {
+            match decode_prefix("id") {
+                Ok(prefix) => prefix,
+                Err(_) => panic!("expected 'id' to decode to a valid Prefix"),
+            }
+        }
     }
 }
 

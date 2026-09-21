@@ -1,3 +1,14 @@
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::unimplemented,
+        clippy::unreachable
+    )
+)]
+
 //! # souvenir_core
 //!
 //! This crate contains implementation details for
@@ -10,5 +21,4 @@ pub mod id;
 pub mod identifiable;
 pub mod integration;
 pub mod prefix;
-pub mod suffix;
 pub mod tagged;

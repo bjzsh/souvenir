@@ -1,66 +1,87 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, DataStruct, DeriveInput, Field, Fields, Generics, Ident, parse_macro_input};
+use syn::{Data, DeriveInput, Fields, Member, parse_macro_input};
 
 pub fn identifiable(input: TokenStream) -> TokenStream {
-    let DeriveInput {
-        ident,
-        data,
-        generics,
-        ..
-    } = parse_macro_input!(input as DeriveInput);
-
-    match data {
-        Data::Struct(data) => identifiable_for_struct(ident, generics, data),
-        Data::Enum(_data) => panic!("#[derive(Identifiable)] cannot be used on enums!"),
-        Data::Union(_data) => panic!("#[derive(Identifiable)] cannot be used on unions!"),
-    }
-}
-
-fn identifiable_for_struct(ident: Ident, generics: Generics, data: DataStruct) -> TokenStream {
-    let target = find_target_field(data.fields);
-
-    let where_clause = &generics.where_clause;
-    let target_ident = target.ident.unwrap();
-
+    let input = parse_macro_input!(input as DeriveInput);
+    let fields = match &input.data {
+        Data::Struct(data) => &data.fields,
+        _ => {
+            return syn::Error::new_spanned(&input.ident, "Identifiable requires a struct")
+                .to_compile_error()
+                .into();
+        }
+    };
+    let target = match find_target_field(fields) {
+        Ok(target) => target,
+        Err(error) => return error.to_compile_error().into(),
+    };
+    let ident = &input.ident;
+    let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
     quote! {
-        impl #generics ::souvenir::Identifiable for #ident #generics #where_clause {
-            fn id(&self) -> ::souvenir::Id {
-                self.#target_ident
-            }
+        impl #impl_generics ::souvenir::Identifiable for #ident #type_generics #where_clause {
+            fn id(&self) -> ::souvenir::Id { self.#target }
         }
     }
     .into()
 }
 
-fn is_suitable_field(field: &Field) -> bool {
-    field.attrs.iter().any(|attr| {
-        attr.path().is_ident("souvenir")
-            && attr
-                .parse_nested_meta(|meta| {
-                    if meta.path.is_ident("id") {
-                        Ok(())
-                    } else {
-                        Err(meta.error("unrecognized repr"))
-                    }
-                })
-                .is_ok()
-    })
+fn find_target_field(fields: &Fields) -> syn::Result<Member> {
+    let mut target = None;
+    for (index, field) in fields.iter().enumerate() {
+        for attr in field
+            .attrs
+            .iter()
+            .filter(|attr| attr.path().is_ident("souvenir"))
+        {
+            attr.parse_nested_meta(|meta| {
+                if !meta.path.is_ident("id") {
+                    return Err(meta.error("expected id"));
+                }
+                if target.is_some() {
+                    return Err(meta.error("only one #[souvenir(id)] field may be specified"));
+                }
+                target = Some(match &field.ident {
+                    Some(ident) => Member::Named(ident.clone()),
+                    None => Member::Unnamed(index.into()),
+                });
+                Ok(())
+            })?;
+        }
+    }
+    target.ok_or_else(|| syn::Error::new_spanned(fields, "missing #[souvenir(id)] field"))
 }
 
-fn find_target_field(fields: Fields) -> Field {
-    let fields: Vec<_> = match fields {
-        Fields::Unit => vec![],
-        Fields::Unnamed(f) => f.unnamed.into_iter().filter(is_suitable_field).collect(),
-        Fields::Named(f) => f.named.into_iter().filter(is_suitable_field).collect(),
-    };
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    if fields.len() > 1 {
-        panic!("only one field can be specified as #[identifier]");
+    fn fields(source: &str) -> Fields {
+        match syn::parse_str::<DeriveInput>(source).unwrap().data {
+            Data::Struct(data) => data.fields,
+            _ => panic!("test fixture must be a struct"),
+        }
     }
 
-    fields
-        .into_iter()
-        .next()
-        .expect("could not find suitable id field! please specify manually")
+    #[test]
+    fn invalid_fields_return_diagnostics() {
+        for source in [
+            "struct A { id: Id }",
+            "struct A { #[souvenir(id)] a: Id, #[souvenir(id)] b: Id }",
+            "struct A { #[souvenir(other)] id: Id }",
+            "struct A { #[souvenir(id = 1)] id: Id }",
+        ] {
+            assert!(find_target_field(&fields(source)).is_err());
+        }
+    }
+
+    #[test]
+    fn named_and_tuple_fields_are_supported() {
+        let named = fields("struct A { #[souvenir(id)] id: Id }");
+        assert!(matches!(find_target_field(&named), Ok(Member::Named(_))));
+        let tuple = fields("struct A(u8, #[souvenir(id)] Id);");
+        assert!(
+            matches!(find_target_field(&tuple), Ok(Member::Unnamed(index)) if index.index == 1)
+        );
+    }
 }

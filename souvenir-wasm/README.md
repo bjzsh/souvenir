@@ -48,11 +48,12 @@ WASM objects between those module formats is not supported.
 ## Working with identifiers
 
 Identifiers are immutable. `prefix` and `suffix` are read-only properties;
-`cast()` returns a new identifier with the same suffix:
+`withPrefix()` returns a new identifier with the same suffix, throwing `InvalidData`
+if that suffix does not fit the destination prefix:
 
 ```js
 const user = Id.random('user');
-const team = user.cast('team');
+const team = user.withPrefix('team');
 console.log(user.prefix); // 'user'
 console.log(team.prefix); // 'team'
 console.log(user.suffix === team.suffix); // true
@@ -71,7 +72,7 @@ Conversion factories validate their inputs:
 
 ```js
 Id.fromBytes(user.toBytes()); // exactly 16 bytes, big-endian
-Id.fromBigInt(user.toBigInt()); // unsigned 128-bit bigint, valid encoded prefix
+Id.fromBigInt(user.toBigInt()); // any unsigned 128-bit bigint
 Id.tryParse('invalid'); // undefined, rather than throwing
 ```
 
@@ -100,5 +101,5 @@ try {
 Codes are `InvalidData`, `InvalidPrefix`, `InvalidChar`, `InvalidFormat`,
 `InvalidLength`, `InvalidType`, `InvalidRange`, and `RandomnessUnavailable`.
 `SouvenirError` and `SouvenirErrorCode` are exported TypeScript types, not runtime constructors.
-Negative or oversized BigInts are rejected without truncation. An in-range
-BigInt must also encode a valid identifier.
+Negative or oversized BigInts are rejected without truncation. Every in-range
+BigInt represents a valid identifier.

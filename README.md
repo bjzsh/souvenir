@@ -5,7 +5,7 @@ A type-safe, tagged identifier library.
 The crate primarily provides the `Id` struct, which stores a 128-bit
 identifier with its corresponding type (tag).
 The String representation of an `Id` is the type's tag and the
-128-bit value encoded into a variant of
+numeric suffix encoded into a variant of
 [Crockford Base 32](https://www.crockford.com/base32.html).
 
 Here is a simple example of how this crate can be used.
@@ -28,3 +28,16 @@ available:
 - Postgres, MySQL, and Sqlite support with
   [`sqlx`](https://docs.rs/sqlx/latest/sqlx/) and
   [`diesel`](https://docs.rs/diesel/latest/diesel/)
+
+## Dense encoding migration (in development)
+
+The dense format orders IDs by prefix, then numeric suffix, and accepts every
+16-byte value. `Id::new(bytes)` and integer `From` conversions are infallible;
+`Id::from_parts(prefix, suffix)` and `with_prefix(prefix)` check the prefix's
+suffix bound.
+Suffixes are plain `u128` values rather than a separate `Suffix` type.
+
+This changes binary meanings. Migrate legacy bytes by decoding them with the old
+version, exporting canonical text, and parsing that text with the new version.
+Do not reinterpret old bytes directly: they will be accepted but generally mean
+different IDs. Existing canonical text remains valid.

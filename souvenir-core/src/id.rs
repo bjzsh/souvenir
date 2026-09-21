@@ -1,20 +1,23 @@
-use crate::encoding::{decode_id, encode_id, validate_id};
+use crate::encoding::{decode_id, encode_id, id_interval, split_id, suffix_interval};
 use crate::error::{Error, Result};
 use crate::prefix::Prefix;
-use crate::suffix::Suffix;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 
 /// Type of the underlying data stored in an [`Id`], which is an array of
-/// 16 bytes. Note that not all possible values represent valid identifiers.
+/// 16 bytes. Every bit pattern represents a valid identifier.
 pub type IdBytes = [u8; 16];
 
-/// A 128-bit identifier consisting of a 1-4 character tag and 108 random bits.
+/// A 128-bit identifier with a 1–4 letter prefix and approximately 109.142
+/// bits of random suffix entropy.
 ///
 /// ```
 /// # use souvenir_core::id::Id;
+/// # #[cfg(feature = "rand")]
+/// # {
 /// let id: Id = Id::random("user".parse().unwrap());
 /// println!("{}", id);
+/// # }
 ///
 /// let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4").unwrap();
 /// assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4");
@@ -31,32 +34,28 @@ pub type IdBytes = [u8; 16];
 pub struct Id(IdBytes);
 
 impl Id {
-    /// Create a new [`Id`] with the provided prefix and suffix.
-    pub const fn new(prefix: Prefix, suffix: Suffix) -> Self {
-        let prefix = (prefix.to_u32() as u128) << 108;
-        let suffix = suffix.to_u128();
-
-        unsafe { Self::from_bytes_unchecked((prefix | suffix).to_be_bytes()) }
-    }
-
-    /// Create a new [`Id`] with the following bytes. If the provided bytes do
-    /// not form a valid [`Id`], this method will error.
-    pub fn from_bytes(value: [u8; 16]) -> Result<Self> {
-        validate_id(value)
-    }
-
-    /// Create a new [`Id`] with the provided raw value.
-    /// The value is not checked to be a valid [`Id`].
-    ///
-    /// # Safety
-    /// This method is unsafe because the API assumes that the provided value
-    /// is valid in order to provide memory safety.
-    pub const unsafe fn from_bytes_unchecked(value: [u8; 16]) -> Self {
+    /// Create a new [`Id`] with the provided bytes.
+    pub const fn new(value: [u8; 16]) -> Self {
         Self(value)
     }
 
+    /// Create a new [`Id`] with the following prefix and suffix.
+    /// If the suffix is not valid for the provided prefix, this will error.
+    pub fn from_parts(prefix: Prefix, suffix: u128) -> Result<Self> {
+        if !suffix_interval(prefix).contains(&suffix) {
+            return Err(Error::InvalidData);
+        }
+        let value = *id_interval(prefix).start() + suffix;
+        Ok(Self::new(value.to_be_bytes()))
+    }
+
+    /// Change the prefix while preserving the suffix, if it fits the destination.
+    pub fn with_prefix(self, prefix: Prefix) -> Result<Self> {
+        Self::from_parts(prefix, self.suffix())
+    }
+
     /// Get the data value of the identifier.
-    pub fn as_bytes(&self) -> &[u8; 16] {
+    pub const fn as_bytes(&self) -> &[u8; 16] {
         &self.0
     }
 
@@ -77,17 +76,12 @@ impl Id {
 
     /// Get the prefix of this identifier.
     pub const fn prefix(self) -> Prefix {
-        unsafe { Prefix::new_unchecked((self.to_u128() >> 108) as u32) }
+        unsafe { Prefix::new_unchecked(split_id(self.to_u128()).0) }
     }
 
     /// Get the suffix of this identifier.
-    pub const fn suffix(self) -> Suffix {
-        Suffix::new(self.to_u128())
-    }
-
-    /// Cast this [`Id`] into an [`Id`] with a different prefix.
-    pub const fn cast(self, prefix: Prefix) -> Self {
-        Self::new(prefix, Suffix::new(u128::from_be_bytes(self.0)))
+    pub const fn suffix(self) -> u128 {
+        split_id(self.to_u128()).1
     }
 
     /// Test to see if the provided string is a valid [`Id`].
@@ -115,7 +109,7 @@ impl Display for Id {
 
 impl Default for Id {
     fn default() -> Self {
-        Self::new(Prefix::default(), Suffix::default())
+        Self::from(*id_interval(Prefix::default()).start())
     }
 }
 
@@ -145,34 +139,31 @@ impl From<Id> for IdBytes {
     }
 }
 
-impl TryFrom<u128> for Id {
-    type Error = Error;
-
-    fn try_from(value: u128) -> Result<Self> {
-        Self::from_bytes(value.to_be_bytes())
+impl From<u128> for Id {
+    fn from(value: u128) -> Self {
+        Self::new(value.to_be_bytes())
     }
 }
 
-impl TryFrom<i128> for Id {
-    type Error = Error;
-
-    fn try_from(value: i128) -> Result<Self> {
-        Self::from_bytes(value.to_be_bytes())
+impl From<i128> for Id {
+    fn from(value: i128) -> Self {
+        Self::new(value.to_be_bytes())
     }
 }
 
-impl TryFrom<IdBytes> for Id {
-    type Error = Error;
-
-    fn try_from(value: IdBytes) -> Result<Self> {
-        Self::from_bytes(value)
+impl From<IdBytes> for Id {
+    fn from(value: IdBytes) -> Self {
+        Self::new(value)
     }
 }
 
 impl TryFrom<&[u8]> for Id {
     type Error = Error;
-
     fn try_from(value: &[u8]) -> Result<Self> {
-        Self::from_bytes(value.try_into().map_err(|_| Error::InvalidData)?)
+        let bytes = value.try_into().map_err(|_| Error::InvalidLength {
+            expected: 16,
+            found: value.len(),
+        })?;
+        Ok(Self::new(bytes))
     }
 }

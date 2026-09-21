@@ -17,8 +17,11 @@
 //! ```
 //! use souvenir::Id;
 //!
+//! # #[cfg(feature = "rand")]
+//! # {
 //! let id: Id = Id::random("user".parse().unwrap());
 //! println!("{}", id);
+//! # }
 //!
 //! let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4").unwrap();
 //! assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4");
@@ -33,7 +36,7 @@
 //!   [`diesel`](https://docs.rs/diesel/latest/diesel/)
 
 pub use souvenir_core::{
-    encoding::ALPHABET, error::*, id::*, identifiable::*, prefix::*, suffix::*, tagged::*,
+    encoding::ALPHABET, error::*, id::*, identifiable::*, prefix::*, tagged::*,
 };
 
 #[cfg(feature = "macros")]
@@ -41,7 +44,7 @@ pub use souvenir_macros::*;
 
 /// Re-exports of the most common imports.
 pub mod prelude {
-    pub use crate::{Id, Identifiable, Prefix, Suffix, Tagged};
+    pub use crate::{Id, Identifiable, Prefix, Tagged};
 
     #[cfg(feature = "macros")]
     pub use crate::{id, prefix};

@@ -21,36 +21,29 @@ impl Parse for IdInput {
 pub fn id(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as IdInput);
 
-    if let IdInput::Literal(ref literal) = input {
-        let value = literal.value();
-
-        if let Ok(id) = Id::parse(&value) {
-            let bytes = id.to_bytes();
-
-            return quote! {
-                unsafe { ::souvenir::Id::from_bytes_unchecked([#(#bytes,)*]) }
+    match input {
+        IdInput::Literal(literal) => {
+            let value = literal.value();
+            if let Ok(id) = Id::parse(&value) {
+                let bytes = id.to_bytes();
+                return quote! { ::souvenir::Id::new([#(#bytes,)*]) }.into();
             }
-            .into();
-        }
-
-        if let Ok(prefix) = decode_prefix(&value) {
-            let prefix = prefix.to_u32();
-
-            return quote! {
-                ::souvenir::Id::random(unsafe {
-                    ::souvenir::Prefix::new_unchecked(#prefix)
-                })
+            if let Ok(prefix) = decode_prefix(&value) {
+                let prefix = prefix.to_u32();
+                return quote! {
+                    ::souvenir::Id::random(unsafe {
+                        ::souvenir::Prefix::new_unchecked(#prefix)
+                    })
+                }
+                .into();
             }
-            .into();
+            syn::Error::new(literal.span(), "expected a valid identifier or prefix")
+                .to_compile_error()
+                .into()
         }
-    }
-
-    if let IdInput::Tagged(ref path) = input {
-        return quote! {
+        IdInput::Tagged(path) => quote! {
             ::souvenir::Id::random(<#path as ::souvenir::Tagged>::PREFIX)
         }
-        .into();
+        .into(),
     }
-
-    panic!("id!(...) was not provided a valid input!");
 }

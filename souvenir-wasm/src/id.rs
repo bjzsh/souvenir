@@ -1,6 +1,6 @@
 //! Immutable JavaScript identifier API.
 
-use souvenir::{Error, Prefix, Suffix};
+use souvenir::{Error, Prefix};
 use wasm_bindgen::prelude::*;
 
 use crate::error::{convert_error, error};
@@ -10,7 +10,7 @@ use crate::interop::{
 
 type Value = souvenir::Id;
 
-/// An immutable 128-bit identifier with a prefix and a 108-bit suffix.
+/// An immutable 128-bit identifier with a prefix and a bounded numeric suffix.
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct Id(Value);
@@ -34,19 +34,20 @@ impl Id {
                 expected: 16,
                 found: value.len(),
             })
-            .and_then(Value::from_bytes)
+            .map(Value::new)
             .map(Self)
             .map_err(convert_error)
     }
 
-    /// Create an identifier from an unsigned 128-bit bigint, validating its prefix.
+    /// Create an identifier from any unsigned 128-bit bigint.
     /// Negative and out-of-range inputs are rejected rather than truncated.
     #[wasm_bindgen(js_name = fromBigInt)]
     pub fn from_big_int(value: &BigIntInput) -> Result<Self, JsValue> {
         let value = bigint_decimal(value)?
             .parse::<u128>()
             .map_err(|_| error("InvalidRange", "Expected an unsigned 128-bit bigint"))?;
-        Value::try_from(value).map(Self).map_err(convert_error)
+
+        Ok(Self(Value::from(value)))
     }
 
     /// Convert this identifier to 16 bytes in big-endian order.
@@ -86,14 +87,19 @@ impl Id {
 
     /// The identifier's encoded suffix.
     #[wasm_bindgen(getter)]
-    pub fn suffix(&self) -> String {
-        self.0.suffix().to_string()
+    pub fn suffix(&self) -> Result<String, JsValue> {
+        self.0
+            .to_string()
+            .split_once('_')
+            .map(|(_, suffix)| suffix.to_owned())
+            .ok_or_else(|| error("InvalidFormat", "Identifier is missing its suffix"))
     }
 
     /// Return a new identifier with a different prefix and the same suffix.
-    pub fn cast(&self, prefix: &StringInput) -> Result<Self, JsValue> {
+    #[wasm_bindgen(js_name = withPrefix)]
+    pub fn with_prefix(&self, prefix: &StringInput) -> Result<Self, JsValue> {
         Prefix::parse(&string_input(prefix)?)
-            .map(|prefix| self.0.cast(prefix))
+            .and_then(|prefix| self.0.with_prefix(prefix))
             .map(Self)
             .map_err(convert_error)
     }
@@ -101,13 +107,17 @@ impl Id {
     /// Generate a random identifier with the given prefix.
     pub fn random(prefix: &StringInput) -> Result<Self, JsValue> {
         let prefix = Prefix::parse(&string_input(prefix)?).map_err(convert_error)?;
-        let mut buf = [0u8; 16];
-        getrandom::fill(&mut buf)
-            .map_err(|_| error("RandomnessUnavailable", "Could not generate random bytes"))?;
-        Ok(Self(Value::new(
-            prefix,
-            Suffix::new(u128::from_be_bytes(buf)),
-        )))
+        // Uniform rejection sampling from 110 bits. Do not reduce modulo the
+        // interval size: that would bias the generated suffixes.
+        loop {
+            let mut buf = [0u8; 16];
+            getrandom::fill(&mut buf)
+                .map_err(|_| error("RandomnessUnavailable", "Could not generate random bytes"))?;
+            let suffix = u128::from_be_bytes(buf) & ((1u128 << 110) - 1);
+            if let Ok(id) = Value::from_parts(prefix, suffix) {
+                return Ok(Self(id));
+            }
+        }
     }
 
     /// Parse an identifier string, throwing a SouvenirError for invalid input.

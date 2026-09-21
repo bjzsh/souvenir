@@ -42,7 +42,7 @@ jobs:
           rustup update ${{ matrix.rust }} --no-self-update
           rustup default ${{ matrix.rust }}
       - name: Run tests
-        run: cargo test --verbose --all-features
+        run: cargo test --verbose --workspace --all-features
   msrv:
     name: MSRV
     runs-on: ubuntu-latest
