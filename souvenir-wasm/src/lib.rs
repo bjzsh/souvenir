@@ -1,3 +1,14 @@
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::unimplemented,
+        clippy::unreachable
+    )
+)]
+
 //! JavaScript bindings for Souvenir identifiers.
 
 mod error;

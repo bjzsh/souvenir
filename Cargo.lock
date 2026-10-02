@@ -686,6 +686,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce57d20d1ea864ce2ac172ab472d409214f4fd359f0b2a2775abdf522e2af99e"
 dependencies = [
  "cfg-if",
+ "futures-util",
  "wasm-bindgen",
 ]
 
@@ -1128,6 +1129,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_test"
+version = "1.0.177"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f901ee573cab6b3060453d2d5f0bae4e6d628c23c0a962ff9b5f1d7c8d4f1ed"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_urlencoded"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1194,7 +1204,7 @@ dependencies = [
 
 [[package]]
 name = "souvenir"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "souvenir-core",
  "souvenir-macros",
@@ -1202,17 +1212,18 @@ dependencies = [
 
 [[package]]
 name = "souvenir-core"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "diesel",
  "rand 0.9.4",
  "serde",
+ "serde_test",
  "sqlx",
 ]
 
 [[package]]
 name = "souvenir-macros"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "quote",
  "rand 0.9.4",
@@ -1223,7 +1234,7 @@ dependencies = [
 
 [[package]]
 name = "souvenir-wasm"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "getrandom 0.3.4",
  "souvenir",
@@ -1304,6 +1315,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]
@@ -1382,6 +1394,7 @@ dependencies = [
  "stringprep",
  "thiserror",
  "tracing",
+ "uuid",
  "whoami",
 ]
 
@@ -1419,6 +1432,7 @@ dependencies = [
  "stringprep",
  "thiserror",
  "tracing",
+ "uuid",
  "whoami",
 ]
 
@@ -1444,6 +1458,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]
@@ -1666,6 +1681,16 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
+
+[[package]]
+name = "uuid"
+version = "1.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f87b8aa10b915a06587d0dec516c282ff295b475d94abf425d62b57710070a2"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "vcpkg"

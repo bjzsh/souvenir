@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "bun scripts/build.ts",
-    "test": "bun test tests"
+    "test": "bun test tests",
+    "test:node": "node scripts/test-node.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.2"

@@ -1,8 +1,10 @@
 mod id;
+mod layout;
 mod prefix;
 mod suffix;
 
 pub use id::*;
+pub use layout::*;
 pub use prefix::*;
 pub use suffix::*;
 
@@ -10,6 +12,8 @@ pub use crate::id::Id;
 
 /// The alphabet of characters used in the suffix part of an [`Id`].
 pub const ALPHABET: &[u8; 32] = b"0123456789abcdefghjkmnpqrstvwxyz";
+
+/// The inverse of the [`ALPHABET`] array, used to map characters to their indices.
 pub const ALPHABET_INV: &[u8; 256] = &{
     let mut output = [255; 256];
 

@@ -1,3 +1,13 @@
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::unimplemented,
+        clippy::unreachable
+    )
+)]
 #![forbid(unsafe_code)]
 
 //! # souvenir_macros
@@ -37,6 +47,11 @@ use proc_macro::TokenStream;
 /// let id3: Id = id!(User);
 /// assert_eq!(id3.prefix().to_string(), "user");
 /// ```
+/// Invalid inputs produce a compiler diagnostic.
+/// ```compile_fail
+/// use souvenir::id;
+/// let _ = id!("invalid!");
+/// ```
 #[proc_macro]
 pub fn id(input: TokenStream) -> TokenStream {
     id::id(input)
@@ -53,6 +68,10 @@ pub fn id(input: TokenStream) -> TokenStream {
 ///
 /// let id: Id = Id::random(prefix);
 /// assert_eq!(id.prefix(), prefix);
+/// ```
+/// ```compile_fail
+/// use souvenir::prefix;
+/// let _ = prefix!("TOOLONG");
 /// ```
 #[proc_macro]
 pub fn prefix(input: TokenStream) -> TokenStream {

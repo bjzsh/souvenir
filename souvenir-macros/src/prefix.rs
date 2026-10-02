@@ -16,5 +16,7 @@ pub fn prefix(input: TokenStream) -> TokenStream {
         .into();
     }
 
-    panic!("\"{}\" is not a valid prefix!", value);
+    syn::Error::new(literal.span(), "expected 1–4 lowercase ASCII letters")
+        .to_compile_error()
+        .into()
 }
