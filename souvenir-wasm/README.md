@@ -1,6 +1,6 @@
 # souvenir.js
 
-A type-safe prefixed identifier library implemented in Rust and WebAssembly.
+A prefixed identifier library implemented in Rust and WebAssembly.
 The package initializes automatically when imported:
 
 ```js
@@ -45,6 +45,22 @@ Browsers resolve URLs or import maps, not npm export conditions.
 ESM and CommonJS consumers are supported separately; sharing class identities or
 WASM objects between those module formats is not supported.
 
+## Identifier format
+
+Canonical identifiers contain a 1–4 letter lowercase ASCII prefix, an underscore,
+and a 22-digit numeric suffix encoded with the alphabet
+`0123456789abcdefghjkmnpqrstvwxyz`. For example:
+`user_02v58c5a3fy30k560qrtg4`.
+
+Every unsigned 128-bit value and every 16-byte array represents a valid identifier.
+Bytes use big-endian order. Numeric values, bytewise comparisons, and canonical
+text under code-unit comparison sort by prefix, then numeric suffix. Locale-aware
+string comparisons can use a different order.
+
+The suffix is bounded by its prefix's interval. Uniform random generation supplies
+approximately 109.142 bits of suffix entropy for a fixed prefix. Not every string
+of 22 valid base-32 digits is a valid suffix for a given prefix.
+
 ## Working with identifiers
 
 Identifiers are immutable. `prefix` and `suffix` are read-only properties;
@@ -76,7 +92,7 @@ Id.fromBigInt(user.toBigInt()); // any unsigned 128-bit bigint
 Id.tryParse('invalid'); // undefined, rather than throwing
 ```
 
-`new Id(bytes)` remains available. `parse()` throws for invalid strings;
+`new Id(bytes)` constructs an identifier from exactly 16 bytes. `parse()` throws for invalid strings;
 `tryParse()` accepts `unknown` and returns `undefined` for non-strings or invalid
 identifiers; `test()` accepts `unknown` and returns `false` for those inputs.
 Throwing string APIs reject non-strings with `InvalidType`. Byte factories accept
@@ -103,3 +119,14 @@ Codes are `InvalidData`, `InvalidPrefix`, `InvalidChar`, `InvalidFormat`,
 `SouvenirError` and `SouvenirErrorCode` are exported TypeScript types, not runtime constructors.
 Negative or oversized BigInts are rejected without truncation. Every in-range
 BigInt represents a valid identifier.
+
+## Development checks
+
+```sh
+bun install --frozen-lockfile
+bun run build
+bun run test
+bun run test:node
+```
+
+The Node check loads both generated module entries and verifies a known identifier.

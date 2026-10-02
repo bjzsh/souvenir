@@ -42,7 +42,7 @@ jobs:
           rustup update ${{ matrix.rust }} --no-self-update
           rustup default ${{ matrix.rust }}
       - name: Run tests
-        run: cargo test --verbose --workspace --all-features
+        run: cargo test --locked --verbose --workspace --all-features
   msrv:
     name: MSRV
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
           rustup update 1.86.0 --no-self-update
           rustup default 1.86.0
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --locked --verbose --workspace --all-features
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -67,4 +67,33 @@ jobs:
     - name: Run formatter
       run: cargo fmt --all --check
     - name: Run clippy
-      run: cargo clippy --verbose -- -D warnings
+      run: cargo clippy --locked --verbose --workspace --all-targets --all-features -- -D warnings
+
+  features:
+    name: Features (${{ matrix.features || 'minimal' }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        features:
+          - ""
+          - macros
+          - rand
+          - serde
+          - diesel,postgres
+          - diesel,mysql
+          - diesel,sqlite
+          - sqlx,postgres
+          - sqlx,mysql
+          - sqlx,sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install SQLite development library
+        if: matrix.features == 'diesel,sqlite'
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+      - name: Test selected features
+        run: cargo test --locked -p souvenir --no-default-features --features "${{ matrix.features }}"
+      - name: Test minimal core
+        if: matrix.features == ''
+        run: cargo test --locked -p souvenir-core --no-default-features

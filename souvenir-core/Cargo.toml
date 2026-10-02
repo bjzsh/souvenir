@@ -12,7 +12,7 @@ repository.workspace = true
 [features]
 default = []
 all = ["diesel", "rand", "serde", "sqlx", "postgres", "mysql", "sqlite"]
-postgres = ["diesel?/postgres_backend", "sqlx?/postgres"]
+postgres = ["diesel?/postgres_backend", "sqlx?/postgres", "sqlx?/uuid"]
 mysql = ["diesel?/mysql_backend", "sqlx?/mysql"]
 sqlite = ["diesel?/sqlite", "sqlx?/sqlite"]
 

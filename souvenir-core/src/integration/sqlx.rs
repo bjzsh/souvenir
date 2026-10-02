@@ -2,8 +2,7 @@
 mod pg {
     use crate::id::Id;
     use sqlx::postgres::{
-        PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgValueFormat, PgValueRef, Postgres,
-        types::Oid,
+        PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgValueRef, Postgres, types::Oid,
     };
     use sqlx::{Decode, Encode, Type, encode::IsNull, error::BoxDynError};
 
@@ -28,11 +27,8 @@ mod pg {
 
     impl Decode<'_, Postgres> for Id {
         fn decode(value: PgValueRef) -> Result<Self, BoxDynError> {
-            match value.format() {
-                PgValueFormat::Binary => Self::try_from(value.as_bytes()?),
-                PgValueFormat::Text => value.as_str()?.parse(),
-            }
-            .map_err(Into::into)
+            <sqlx::types::Uuid as Decode<Postgres>>::decode(value)
+                .map(|uuid| Self::new(*uuid.as_bytes()))
         }
     }
 }
