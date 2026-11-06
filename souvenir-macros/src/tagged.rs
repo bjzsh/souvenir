@@ -1,49 +1,45 @@
-use proc_macro::TokenStream;
-use quote::quote;
-use syn::{Attribute, DeriveInput, LitStr, parse_macro_input};
+use crate::attr;
+use proc_macro2::TokenStream;
+use quote::{quote, quote_spanned};
+use syn::{DeriveInput, parse2};
 
-pub fn tagged(input: TokenStream) -> TokenStream {
-    let DeriveInput {
-        ident,
-        generics,
-        attrs,
-        ..
-    } = parse_macro_input!(input as DeriveInput);
-
-    let tag = find_tag(attrs);
-    let where_clause = &generics.where_clause;
-
-    quote! {
-        impl #generics ::souvenir::Tagged for #ident #generics #where_clause {
-            const PREFIX: ::souvenir::Prefix = ::souvenir::prefix!(#tag);
-        }
-    }
-    .into()
+pub fn derive(input: TokenStream) -> TokenStream {
+    expand(input).unwrap_or_else(syn::Error::into_compile_error)
 }
 
-fn find_tag(attrs: Vec<Attribute>) -> LitStr {
-    let filtered = attrs
-        .into_iter()
-        .filter(|attr| attr.path().is_ident("souvenir"));
-    let mut tag: Option<LitStr> = None;
+fn expand(input: TokenStream) -> syn::Result<TokenStream> {
+    let input: DeriveInput = parse2(input)?;
+    let ident = &input.ident;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let attrs = attr::parse(&input.attrs)?;
 
-    for attr in filtered {
-        attr.parse_nested_meta(|meta| {
-            if meta.path.is_ident("tag") {
-                let value = meta.value()?;
-                let s: LitStr = value.parse()?;
+    let prefix = attrs.prefix.ok_or_else(|| {
+        syn::Error::new_spanned(ident, "missing #[souvenir(prefix = \"...\")] attribute")
+    })?;
 
-                if tag.is_some() {
-                    panic!("found multiple tags!");
-                }
-
-                tag = Some(s);
-            }
-
-            Ok(())
-        })
-        .unwrap()
+    if let Some(form) = &attrs.storage {
+        if !matches!(form.to_string().as_str(), "Text" | "Bytes" | "Uuid") {
+            return Err(syn::Error::new_spanned(
+                form,
+                "storage must be `Text`, `Bytes` or `Uuid`",
+            ));
+        }
     }
 
-    tag.expect("could not find tag attr")
+    let storage = attrs.storage.as_ref().map(|form| {
+        quote! { const STORAGE: ::souvenir::Storage = ::souvenir::Storage::#form; }
+    });
+
+    // `prefix!` checks in a const item of its own, so `cargo check` reports
+    // an invalid prefix even when the impl is generic.
+    let checked = quote_spanned! { prefix.span() =>
+        ::souvenir::prefix!(#prefix)
+    };
+
+    Ok(quote! {
+        impl #impl_generics ::souvenir::Tagged for #ident #ty_generics #where_clause {
+            const PREFIX: ::souvenir::Prefix = #checked;
+            #storage
+        }
+    })
 }

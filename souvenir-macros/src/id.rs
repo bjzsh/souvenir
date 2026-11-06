@@ -1,56 +1,61 @@
-use proc_macro::TokenStream;
-use quote::quote;
-use souvenir_core::{encoding::decode_prefix, id::Id};
-use syn::{LitStr, Path, parse::Parse, parse_macro_input};
+use proc_macro2::TokenStream;
+use quote::{quote, quote_spanned};
+use syn::parse::{Parse, ParseStream};
+use syn::{LitStr, Token, Type, parse2};
 
-enum IdInput {
-    Literal(LitStr),
-    Tagged(Path),
+struct IdInput {
+    ty: Option<Type>,
+    literal: LitStr,
 }
 
 impl Parse for IdInput {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Ok(if input.peek(LitStr) {
-            Self::Literal(input.parse()?)
-        } else {
-            Self::Tagged(input.parse()?)
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        if input.peek(LitStr) {
+            let literal = input.parse()?;
+            return Ok(Self { ty: None, literal });
+        }
+        let ty = input.parse()?;
+        input.parse::<Token![,]>()?;
+        let literal = input.parse()?;
+        Ok(Self {
+            ty: Some(ty),
+            literal,
         })
     }
 }
 
 pub fn id(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as IdInput);
+    let IdInput { ty, literal } = match parse2(input) {
+        Ok(input) => input,
+        Err(e) => return e.to_compile_error(),
+    };
 
-    if let IdInput::Literal(ref literal) = input {
-        let value = literal.value();
-
-        if let Ok(id) = Id::parse(&value) {
-            let bytes = id.to_bytes();
-
-            return quote! {
-                unsafe { ::souvenir::Id::from_bytes_unchecked([#(#bytes,)*]) }
-            }
-            .into();
+    let parsed = quote_spanned! { literal.span() =>
+        match ::souvenir::Souvenir::parse(#literal) {
+            ::core::result::Result::Ok(id) => id,
+            ::core::result::Result::Err(e) => ::core::panic!("{}", e.message()),
         }
+    };
 
-        if let Ok(prefix) = decode_prefix(&value) {
-            let prefix = prefix.to_u32();
+    match ty {
+        None => quote! {{
+            const ID: ::souvenir::Souvenir = #parsed;
+            ID
+        }},
+        Some(ty) => {
+            let typed = quote_spanned! { literal.span() =>
+                const {
+                    match ::souvenir::Id::<#ty>::parse(#literal) {
+                        ::core::result::Result::Ok(id) => id,
+                        ::core::result::Result::Err(e) => ::core::panic!("{}", e.message()),
+                    }
+                }
+            };
 
-            return quote! {
-                ::souvenir::Id::random(unsafe {
-                    ::souvenir::Prefix::new_unchecked(#prefix)
-                })
-            }
-            .into();
+            quote! {{
+                const _: ::souvenir::Souvenir = #parsed;
+                #typed
+            }}
         }
     }
-
-    if let IdInput::Tagged(ref path) = input {
-        return quote! {
-            ::souvenir::Id::random(<#path as ::souvenir::Tagged>::PREFIX)
-        }
-        .into();
-    }
-
-    panic!("id!(...) was not provided a valid input!");
 }

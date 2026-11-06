@@ -1,66 +1,61 @@
-use proc_macro::TokenStream;
+use crate::attr;
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Data, DataStruct, DeriveInput, Field, Fields, Generics, Ident, parse_macro_input};
+use syn::{Data, DeriveInput, Index, Member, parse2};
 
-pub fn identifiable(input: TokenStream) -> TokenStream {
-    let DeriveInput {
-        ident,
-        data,
-        generics,
-        ..
-    } = parse_macro_input!(input as DeriveInput);
-
-    match data {
-        Data::Struct(data) => identifiable_for_struct(ident, generics, data),
-        Data::Enum(_data) => panic!("#[derive(Identifiable)] cannot be used on enums!"),
-        Data::Union(_data) => panic!("#[derive(Identifiable)] cannot be used on unions!"),
-    }
+pub fn derive(input: TokenStream) -> TokenStream {
+    expand(input).unwrap_or_else(syn::Error::into_compile_error)
 }
 
-fn identifiable_for_struct(ident: Ident, generics: Generics, data: DataStruct) -> TokenStream {
-    let target = find_target_field(data.fields);
-
-    let where_clause = &generics.where_clause;
-    let target_ident = target.ident.unwrap();
-
-    quote! {
-        impl #generics ::souvenir::Identifiable for #ident #generics #where_clause {
-            fn id(&self) -> ::souvenir::Id {
-                self.#target_ident
-            }
-        }
-    }
-    .into()
-}
-
-fn is_suitable_field(field: &Field) -> bool {
-    field.attrs.iter().any(|attr| {
-        attr.path().is_ident("souvenir")
-            && attr
-                .parse_nested_meta(|meta| {
-                    if meta.path.is_ident("id") {
-                        Ok(())
-                    } else {
-                        Err(meta.error("unrecognized repr"))
-                    }
-                })
-                .is_ok()
-    })
-}
-
-fn find_target_field(fields: Fields) -> Field {
-    let fields: Vec<_> = match fields {
-        Fields::Unit => vec![],
-        Fields::Unnamed(f) => f.unnamed.into_iter().filter(is_suitable_field).collect(),
-        Fields::Named(f) => f.named.into_iter().filter(is_suitable_field).collect(),
+fn expand(input: TokenStream) -> syn::Result<TokenStream> {
+    let input: DeriveInput = parse2(input)?;
+    let ident = &input.ident;
+    let Data::Struct(data) = &input.data else {
+        return Err(syn::Error::new_spanned(
+            ident,
+            "#[derive(Identifiable)] can only be used on structs",
+        ));
     };
 
-    if fields.len() > 1 {
-        panic!("only one field can be specified as #[identifier]");
+    let mut found = None;
+    for (i, field) in data.fields.iter().enumerate() {
+        if !attr::parse(&field.attrs)?.id {
+            continue;
+        }
+        if found.is_some() {
+            return Err(syn::Error::new_spanned(
+                field,
+                "only one field can be marked #[souvenir(id)]",
+            ));
+        }
+        let member = match &field.ident {
+            Some(name) => Member::Named(name.clone()),
+            None => Member::Unnamed(Index::from(i)),
+        };
+        found = Some((member, &field.ty));
     }
+    // Without a marked field, use the one named `id`.
+    let found = found.or_else(|| {
+        data.fields.iter().find_map(|field| {
+            let name = field.ident.as_ref().filter(|name| *name == "id")?;
+            Some((Member::Named(name.clone()), &field.ty))
+        })
+    });
+    let (member, ty) = found.ok_or_else(|| {
+        syn::Error::new_spanned(
+            ident,
+            "add a field named `id`, or mark the ID field with #[souvenir(id)]",
+        )
+    })?;
 
-    fields
-        .into_iter()
-        .next()
-        .expect("could not find suitable id field! please specify manually")
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    Ok(quote! {
+        impl #impl_generics ::souvenir::Identifiable for #ident #ty_generics #where_clause {
+            type Tag = <#ty as ::souvenir::Identifiable>::Tag;
+
+            fn id(&self) -> ::souvenir::Id<Self::Tag> {
+                ::souvenir::Identifiable::id(&self.#member)
+            }
+        }
+    })
 }

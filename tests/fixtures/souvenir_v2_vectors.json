@@ -1,0 +1,389 @@
+{
+  "spec": "souvenir-v2",
+  "constants": {
+    "S": [
+      1,
+      27,
+      703,
+      18279,
+      475255,
+      12356631,
+      321272407,
+      8353082583,
+      217180147159
+    ],
+    "prefix_rank_limit": 217180147159,
+    "alphabet": "0123456789abcdefghjkmnpqrstvwxyz"
+  },
+  "prefix_ranks": {
+    "a": 1,
+    "b": 8353082584,
+    "z": 208827064576,
+    "aa": 2,
+    "ab": 321272409,
+    "az": 8031810177,
+    "ba": 8353082585,
+    "u": 167061651661,
+    "org": 122478926870,
+    "user": 172902060849,
+    "users": 172902389872,
+    "invoice": 71267492529,
+    "aaaaaaaa": 8,
+    "zzzzzzzz": 217180147158
+  },
+  "valid": [
+    {
+      "prefix": "a",
+      "prefix_rank": 1,
+      "timestamp_ms": 0,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "0000000004000000000000000000000000000000",
+      "text": "a_0000000000000000000000000",
+      "uuid": "00000000-0000-7000-8000-000000000000"
+    },
+    {
+      "prefix": "z",
+      "prefix_rank": 208827064576,
+      "timestamp_ms": 0,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "c27c408400000000000000000000000000000000",
+      "text": "z_0000000000000000000000000",
+      "uuid": "00000000-0000-7000-8000-000000000000"
+    },
+    {
+      "prefix": "aa",
+      "prefix_rank": 2,
+      "timestamp_ms": 0,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "0000000008000000000000000000000000000000",
+      "text": "aa_0000000000000000000000000",
+      "uuid": "00000000-0000-7000-8000-000000000000"
+    },
+    {
+      "prefix": "b",
+      "prefix_rank": 8353082584,
+      "timestamp_ms": 0,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "07c787b360000000000000000000000000000000",
+      "text": "b_0000000000000000000000000",
+      "uuid": "00000000-0000-7000-8000-000000000000"
+    },
+    {
+      "prefix": "u",
+      "prefix_rank": 167061651661,
+      "timestamp_ms": 1793531580000,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "9b969a033406865b403980000000000000000000",
+      "text": "u_00t35pg1sg000000000000000",
+      "uuid": "01a196d0-0e60-7000-8000-000000000000"
+    },
+    {
+      "prefix": "user",
+      "prefix_rank": 172902060849,
+      "timestamp_ms": 1793531580000,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "a107104cc406865b403980000000000000000000",
+      "text": "user_00t35pg1sg000000000000000",
+      "uuid": "01a196d0-0e60-7000-8000-000000000000"
+    },
+    {
+      "prefix": "user",
+      "prefix_rank": 172902060849,
+      "timestamp_ms": 1793531580000,
+      "random_hex": "0000000000000000001",
+      "bytes_hex": "a107104cc406865b403980000000000000000001",
+      "text": "user_00t35pg1sg000000000000001",
+      "uuid": "01a196d0-0e60-7000-8000-000000000001"
+    },
+    {
+      "prefix": "user",
+      "prefix_rank": 172902060849,
+      "timestamp_ms": 1793531580000,
+      "random_hex": "3ffffffffffffffffff",
+      "bytes_hex": "a107104cc406865b403983ffffffffffffffffff",
+      "text": "user_00t35pg1sgfzzzzzzzzzzzzzz",
+      "uuid": "01a196d0-0e60-7fff-bfff-ffffffffffff"
+    },
+    {
+      "prefix": "user",
+      "prefix_rank": 172902060849,
+      "timestamp_ms": 1793531580001,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "a107104cc406865b403984000000000000000000",
+      "text": "user_00t35pg1sgg00000000000000",
+      "uuid": "01a196d0-0e61-7000-8000-000000000000"
+    },
+    {
+      "prefix": "users",
+      "prefix_rank": 172902389872,
+      "timestamp_ms": 1793531580000,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "a1072461c006865b403980000000000000000000",
+      "text": "users_00t35pg1sg000000000000000",
+      "uuid": "01a196d0-0e60-7000-8000-000000000000"
+    },
+    {
+      "prefix": "org",
+      "prefix_rank": 122478926870,
+      "timestamp_ms": 1793531580000,
+      "random_hex": "2a5f3c9e1b7d04a6c8e",
+      "bytes_hex": "721140705806865b403982a5f3c9e1b7d04a6c8e",
+      "text": "org_00t35pg1sgajz7jf1pz84mv4e",
+      "uuid": "01a196d0-0e60-7a97-b3c9-e1b7d04a6c8e"
+    },
+    {
+      "prefix": "invoice",
+      "prefix_rank": 71267492529,
+      "timestamp_ms": 1793531580000,
+      "random_hex": "2aaaaaaaaaaaaaaaaaa",
+      "bytes_hex": "425f7e8ac406865b403982aaaaaaaaaaaaaaaaaa",
+      "text": "invoice_00t35pg1sgananananananana",
+      "uuid": "01a196d0-0e60-7aaa-aaaa-aaaaaaaaaaaa"
+    },
+    {
+      "prefix": "zzzzzzzz",
+      "prefix_rank": 217180147158,
+      "timestamp_ms": 281474976710655,
+      "random_hex": "3ffffffffffffffffff",
+      "bytes_hex": "ca43c8375bffffffffffffffffffffffffffffff",
+      "text": "zzzzzzzz_3zzzzzzzzzzzzzzzzzzzzzzzz",
+      "uuid": "ffffffff-ffff-7fff-bfff-ffffffffffff"
+    },
+    {
+      "prefix": "aaaaaaaa",
+      "prefix_rank": 8,
+      "timestamp_ms": 0,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "0000000020000000000000000000000000000000",
+      "text": "aaaaaaaa_0000000000000000000000000",
+      "uuid": "00000000-0000-7000-8000-000000000000"
+    },
+    {
+      "prefix": "user",
+      "prefix_rank": 172902060849,
+      "timestamp_ms": 0,
+      "random_hex": "0000000000000000000",
+      "bytes_hex": "a107104cc4000000000000000000000000000000",
+      "text": "user_0000000000000000000000000",
+      "uuid": "00000000-0000-7000-8000-000000000000"
+    }
+  ],
+  "sorted_text": [
+    "a_0000000000000000000000000",
+    "aa_0000000000000000000000000",
+    "aaaaaaaa_0000000000000000000000000",
+    "b_0000000000000000000000000",
+    "invoice_00t35pg1sgananananananana",
+    "org_00t35pg1sgajz7jf1pz84mv4e",
+    "u_00t35pg1sg000000000000000",
+    "user_0000000000000000000000000",
+    "user_00t35pg1sg000000000000000",
+    "user_00t35pg1sg000000000000001",
+    "user_00t35pg1sgfzzzzzzzzzzzzzz",
+    "user_00t35pg1sgg00000000000000",
+    "users_00t35pg1sg000000000000000",
+    "z_0000000000000000000000000",
+    "zzzzzzzz_3zzzzzzzzzzzzzzzzzzzzzzzz"
+  ],
+  "invalid": [
+    {
+      "kind": "text",
+      "input": "user00t35pg1sgajz7jf1pz84mv4e",
+      "error": "MissingSeparator",
+      "why": "no separator"
+    },
+    {
+      "kind": "text",
+      "input": "_00t35pg1sgajz7jf1pz84mv4e0",
+      "error": "InvalidPrefix",
+      "why": "empty prefix"
+    },
+    {
+      "kind": "text",
+      "input": "abcdefghi_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidPrefix",
+      "why": "9-letter prefix"
+    },
+    {
+      "kind": "text",
+      "input": "User_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidPrefix",
+      "why": "uppercase in prefix"
+    },
+    {
+      "kind": "text",
+      "input": "us3r_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidPrefix",
+      "why": "digit in prefix"
+    },
+    {
+      "kind": "text",
+      "input": "user_auth_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidPrefix",
+      "why": "underscore in prefix"
+    },
+    {
+      "kind": "text",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4",
+      "error": "InvalidLength",
+      "why": "24-char suffix"
+    },
+    {
+      "kind": "text",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4e0",
+      "error": "InvalidLength",
+      "why": "26-char suffix"
+    },
+    {
+      "kind": "text",
+      "input": "user_00T35PG1SGAJZ7JF1PZ84MV4E",
+      "error": "InvalidCharacter",
+      "why": "uppercase suffix"
+    },
+    {
+      "kind": "text",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4i",
+      "error": "InvalidCharacter",
+      "why": "excluded letter i"
+    },
+    {
+      "kind": "text",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4l",
+      "error": "InvalidCharacter",
+      "why": "excluded letter l"
+    },
+    {
+      "kind": "text",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4o",
+      "error": "InvalidCharacter",
+      "why": "excluded letter o"
+    },
+    {
+      "kind": "text",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4u",
+      "error": "InvalidCharacter",
+      "why": "excluded letter u"
+    },
+    {
+      "kind": "text",
+      "input": "user_40t35pg1sgajz7jf1pz84mv4e",
+      "error": "NonCanonical",
+      "why": "first suffix char 4 (> 3)"
+    },
+    {
+      "kind": "text",
+      "input": "user_z0t35pg1sgajz7jf1pz84mv4e",
+      "error": "NonCanonical",
+      "why": "first suffix char z (> 3)"
+    },
+    {
+      "kind": "text",
+      "input": " user_00t35pg1sgajz7jf1pz84mv4",
+      "error": "InvalidPrefix",
+      "why": "leading whitespace"
+    },
+    {
+      "kind": "text",
+      "input": "us\u00e9r_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidCharacter",
+      "why": "non-ASCII"
+    },
+    {
+      "kind": "bytes",
+      "input": "00000000000000000000000000000000000000",
+      "error": "InvalidLength",
+      "why": "19 bytes"
+    },
+    {
+      "kind": "bytes",
+      "input": "000000000000000000000000000000000000000000",
+      "error": "InvalidLength",
+      "why": "21 bytes"
+    },
+    {
+      "kind": "bytes",
+      "input": "0000000000000000000000000000000000000000",
+      "error": "ZeroPrefix",
+      "why": "all-zero bytes (no nil ID)"
+    },
+    {
+      "kind": "bytes",
+      "input": "0000000000000000000000000000000000000001",
+      "error": "ZeroPrefix",
+      "why": "rank 0 with non-zero body"
+    },
+    {
+      "kind": "bytes",
+      "input": "0000000003ffffffffffffffffffffffffffffff",
+      "error": "ZeroPrefix",
+      "why": "rank 0, maximal body"
+    },
+    {
+      "kind": "bytes",
+      "input": "ca43c8375c000000000000000000000000000000",
+      "error": "ReservedPrefix",
+      "why": "first reserved rank"
+    },
+    {
+      "kind": "bytes",
+      "input": "ffffffffffffffffffffffffffffffffffffffff",
+      "error": "ReservedPrefix",
+      "why": "max field value"
+    }
+  ],
+  "parse_expecting": [
+    {
+      "expected": "user",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4e",
+      "why": "matching prefix"
+    },
+    {
+      "expected": "org",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "PrefixMismatch",
+      "why": "valid but different prefix"
+    },
+    {
+      "expected": "users",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "PrefixMismatch",
+      "why": "expected is an extension of actual"
+    },
+    {
+      "expected": "use",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "PrefixMismatch",
+      "why": "expected is a prefix of actual"
+    },
+    {
+      "expected": "User",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidPrefix",
+      "why": "invalid expected prefix, valid input"
+    },
+    {
+      "expected": "",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidPrefix",
+      "why": "empty expected prefix"
+    },
+    {
+      "expected": "customers",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidPrefix",
+      "why": "9-letter expected prefix"
+    },
+    {
+      "expected": "us3r",
+      "input": "garbage",
+      "error": "InvalidPrefix",
+      "why": "expected checked before input"
+    },
+    {
+      "expected": "user",
+      "input": "garbage",
+      "error": "MissingSeparator",
+      "why": "valid expected, invalid input"
+    }
+  ]
+}
