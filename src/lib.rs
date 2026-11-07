@@ -1,48 +1,61 @@
 #![forbid(unsafe_code)]
+// Library code never panics at run time: no explicit panics, and no
+// `unwrap`/`expect`. (Panics in `const` evaluation, such as an invalid
+// `prefix!` literal, are compile errors and are fine.)
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::panic,
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::unreachable,
+        clippy::todo,
+        clippy::unimplemented
+    )
+)]
+#![warn(missing_docs)]
+// The crate docs are the README, so docs.rs and GitHub show one guide and its
+// examples run as doctests. The examples need the default features; without
+// them, a one-line summary stands in.
+#![cfg_attr(
+    all(feature = "getrandom", feature = "macros", feature = "serde"),
+    doc = include_str!("../README.md")
+)]
+#![cfg_attr(
+    not(all(feature = "getrandom", feature = "macros", feature = "serde")),
+    doc = "Type-safe, sortable, prefixed IDs. See the README for the guide."
+)]
 
-//! # souvenir
-//!
-//! A type-safe, tagged identifier library.
-//!
-//!
-//! The crate primarily provides the [`Id`] struct, which stores a 128-bit
-//! identifier with its corresponding type (tag).
-//!
-//! The String representation of an [`Id`] is the type's tag and the
-//! random value encoded into a variant of
-//! [Crockford Base 32](https://www.crockford.com/base32.html).
-//!
-//! Here is a simple example of how this crate can be used.
-//!
-//! ```
-//! use souvenir::Id;
-//!
-//! let id: Id = Id::random("user".parse().unwrap());
-//! println!("{}", id);
-//!
-//! let id2: Id = Id::parse("user_02v58c5a3fy30k560qrtg4").unwrap();
-//! assert_eq!(id2.to_string(), "user_02v58c5a3fy30k560qrtg4");
-//! ```
-//!
-//! Integrations for various libraries and databases are also (optionally)
-//! available:
-//! - (De)serialization with [`serde`](https://docs.rs/serde/latest/serde/)
-//! - Random ID generation with [`rand`](https://docs.rs/rand/latest/rand/)
-//! - Postgres, MySQL, and Sqlite support with
-//!   [`sqlx`](https://docs.rs/sqlx/latest/sqlx/) and
-//!   [`diesel`](https://docs.rs/diesel/latest/diesel/)
+#[macro_use]
+mod util;
 
-pub use souvenir_core::{
-    encoding::ALPHABET, error::*, id::*, identifiable::*, prefix::*, suffix::*, tagged::*,
-};
+mod base32;
+mod error;
+mod id;
+mod identifiable;
+mod integration;
+mod prefix;
+mod souvenir;
+mod spec;
+mod storage;
+mod tagged;
+
+pub mod generator;
+
+pub use error::{Error, Result};
+pub use generator::generator::Generator;
+pub use generator::generators::{MonotonicGenerator, RandomGenerator};
+pub use id::Id;
+pub use identifiable::Identifiable;
+pub use prefix::Prefix;
+pub use souvenir::Souvenir;
+pub use storage::Storage;
+pub use tagged::Tagged;
 
 #[cfg(feature = "macros")]
-pub use souvenir_macros::*;
+pub use souvenir_macros::{Identifiable, Tagged, id};
 
-/// Re-exports of the most common imports.
-pub mod prelude {
-    pub use crate::{Id, Identifiable, Prefix, Suffix, Tagged};
-
-    #[cfg(feature = "macros")]
-    pub use crate::{id, prefix};
-}
+/// The `uuid` crate, re-exported so `to_uuid` and `from_uuid` can be used
+/// without depending on it directly (and without a version mismatch).
+#[cfg(feature = "uuid")]
+pub use uuid;

@@ -23,6 +23,9 @@ const toolsBin = join(toolsDir, 'bin');
 const outputDir = join(root, 'dist');
 const toolPath = [toolsBin, join(root, 'node_modules/.bin'), process.env.PATH ?? ''].join(delimiter);
 const shell = $.cwd(root).env({ ...process.env, PATH: toolPath });
+// Local builds without Binaryen can pass --no-wasm-opt; release builds in CI
+// always optimize.
+const noWasmOpt = process.argv.includes('--no-wasm-opt');
 
 function executable(name: string, path = toolPath): string {
   const location = Bun.which(name, { PATH: path });
@@ -51,7 +54,8 @@ async function installTools(cargo: string, crate: CargoPackage): Promise<string>
 }
 
 async function writeManifest(stage: string, crate: CargoPackage): Promise<void> {
-  // wasm-bodge generates the exports, loaders, and declarations.
+  // wasm-bodge generates the exports, loaders, and declarations. The package
+  // root exports the hand-written TypeScript wrapper in ts/.
   const manifest = {
     name: 'souvenir.js',
     version: crate.version,
@@ -60,6 +64,12 @@ async function writeManifest(stage: string, crate: CargoPackage): Promise<void> 
     repository: crate.repository,
     engines: { node: '>=22.12.0' },
     files: ['README.md', 'LICENSE'],
+    'wasm-bodge': {
+      wrapper: {
+        entry: join(root, 'ts/index.ts'),
+        tsconfig: join(root, 'tsconfig.json'),
+      },
+    },
   };
   await Bun.write(join(stage, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');
 }
@@ -70,7 +80,20 @@ async function buildPackage(bodge: string, crate: CargoPackage, lockPath: string
     const lockFile = Bun.file(lockPath);
     const originalLock = await lockFile.text();
     await writeManifest(stage, crate);
-    await shell`${bodge} build --crate-path ${root} --package-json ${join(stage, 'package.json')} --out-dir ${join(stage, 'lib')} --panic abort`;
+    const optimize = noWasmOpt ? ['--no-wasm-opt'] : [];
+    await shell`${bodge} build --crate-path ${root} --package-json ${join(stage, 'package.json')} --out-dir ${join(stage, 'lib')} --panic abort ${optimize}`;
+
+    // The wrapper config holds absolute local paths; it is build input only.
+    const manifestFile = Bun.file(join(stage, 'package.json'));
+    const built = await manifestFile.json();
+    delete built['wasm-bodge'];
+    // The wrapper reaches the raw bindings through `#wasm-bodge/bindings`
+    // (package-internal imports); they are not public API.
+    delete built.exports['./bindings'];
+    delete built.exports['./bindings/slim'];
+    await Bun.write(manifestFile, JSON.stringify(built, null, 2) + '\n');
+    // wasm-bodge leaves an empty scratch directory next to the manifest.
+    await rm(join(stage, 'wrapper'), { recursive: true, force: true });
 
     // Upstream has no --locked flag: reject output if dependency resolution changed.
     if (await lockFile.text() !== originalLock) {
@@ -89,8 +112,9 @@ async function buildPackage(bodge: string, crate: CargoPackage, lockPath: string
 
 async function main(): Promise<void> {
   const cargo = executable('cargo');
-  executable('wasm-opt');
+  if (!noWasmOpt) executable('wasm-opt');
   executable('esbuild');
+  executable('tsc');
 
   const { crate, lockPath } = await readMetadata(cargo);
   const bodge = await installTools(cargo, crate);

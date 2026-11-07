@@ -1,22 +1,69 @@
 # souvenir.js
 
-A type-safe prefixed identifier library implemented in Rust and WebAssembly.
-The package initializes automatically when imported:
+Type-safe, sortable, prefixed identifiers like
+`user_00t35pg1sg9ech32tymrkdq6v`, implemented in Rust and WebAssembly.
 
-```js
-import { Id } from 'souvenir.js';
+IDs are plain strings at run time, so they work as `Map` keys, compare with
+`===`, and serialize to JSON as themselves. In TypeScript they carry their
+prefix in the type. The package initializes automatically when imported.
 
-const id = Id.random('user');
-console.log(id.toString());
-id.free();
+```ts
+import { typed, type SouvenirError, type SouvenirId } from 'souvenir.js';
+
+const UserId = typed('user');
+const OrgId = typed('org');
+type UserId = SouvenirId<'user'>;
+
+const id: UserId = UserId.new();         // 'user_00t35pg1sg...'
+const parsed = UserId.parse(input);      // throws unless input is a user ID
+if (UserId.is(value)) { /* value: UserId */ }
+
+function loadUser(id: UserId) { /* ... */ }
+loadUser(OrgId.new());                   // type error: not a user ID
 ```
 
-Node CommonJS also works:
+`typed()` throws `InvalidPrefix` straight away for a bad prefix. Prefixes are
+1-8 lowercase letters.
 
-```js
-const { Id } = require('souvenir.js');
-console.log(Id.random('user').toString());
+## Functions
+
+Each function either returns a value or throws a `SouvenirError`.
+
+| Function | Returns |
+|---|---|
+| `newId(prefix)` | a new ID |
+| `newMonotonicId(prefix)` | a new ID greater than every earlier result of this function, even within one millisecond |
+| `parse(text)` | `text` as an ID, if valid |
+| `parseExpecting(prefix, text)` | `text` as an ID, if valid and with that prefix |
+| `isValid(value)` | whether `value` is a valid ID string; never throws |
+| `fromParts(prefix, timestampMs, random)` | an ID from a safe-integer timestamp and a 74-bit `bigint` |
+| `prefixOf(id)`, `timestampOf(id)`, `dateOf(id)`, `randomOf(id)` | an ID's fields: prefix, Unix milliseconds, `Date`, 74-bit `bigint` |
+| `toBytes(id)`, `fromBytes(bytes)` | the 20-byte binary form (`Uint8Array`) |
+| `toUuid(id)`, `fromUuid(prefix, uuid)` | the UUIDv7 form (text or 16 bytes); the prefix is dropped and must be passed back |
+| `compare(a, b)` | plain string comparison, which is also binary order |
+| `typed(prefix)` | `new`, `newMonotonic`, `parse`, `is`, `fromParts`, `fromBytes` and `fromUuid` for one prefix |
+
+IDs sort by prefix, then by creation time: plain `Array.prototype.sort()`
+puts IDs of one prefix in creation order. IDs from `newId` in the same
+millisecond are in random order; use `newMonotonicId` when that matters.
+
+## Errors
+
+Errors are standard `Error`s with `name: 'SouvenirError'` and a stable
+`code`:
+
+```ts
+try {
+  UserId.parse('org_00t35pg1sgajz7jf1pz84mv4e');
+} catch (error) {
+  console.log((error as SouvenirError).code); // 'PrefixMismatch'
+}
 ```
+
+The codes are the ones in the [specification](../SPEC.md#9-errors), plus
+`InvalidType` for an argument of the wrong JavaScript type (a non-string ID,
+or bytes that are not a `Uint8Array`). `SouvenirError` and
+`SouvenirErrorCode` are exported TypeScript types.
 
 ## Supported consumers
 
@@ -25,80 +72,26 @@ console.log(Id.random('user').toString());
 - Webpack 5 in production, with no WASM experiment required.
 - Native browser ES modules, using the generated embedded-WASM entry.
 
-Browsers need WebAssembly, BigInt, and cryptographic randomness (use HTTPS or
-localhost). The bundler entry uses top-level await internally; application code
-needs no initialization call. It emits WASM as an asset, so include the generated
-assets in deployments and serve `.wasm` as `application/wasm`.
+Browsers need WebAssembly, BigInt and cryptographic randomness (use HTTPS or
+localhost). The bundler entry uses top-level await internally; application
+code needs no initialization call. It emits WASM as an asset, so include the
+generated assets in deployments and serve `.wasm` as `application/wasm`.
 
-For native browsers, serve the complete package directory at `/vendor/souvenir/`:
+For native browsers, serve the complete package directory at
+`/vendor/souvenir/` and import the embedded-WASM entry:
 
 ```html
 <script type="module">
-  import { Id } from '/vendor/souvenir/lib/esm/web.js';
-  console.log(Id.random('user').toString());
+  import { newId } from '/vendor/souvenir/lib/wrapper/esm/web.js';
+  console.log(newId('user'));
 </script>
 ```
 
-That entry embeds the WASM bytes and initializes synchronously on import.
-Browsers resolve URLs or import maps, not npm export conditions.
+## Development
 
-ESM and CommonJS consumers are supported separately; sharing class identities or
-WASM objects between those module formats is not supported.
-
-## Working with identifiers
-
-Identifiers are immutable. `prefix` and `suffix` are read-only properties;
-`cast()` returns a new identifier with the same suffix:
-
-```js
-const user = Id.random('user');
-const team = user.cast('team');
-console.log(user.prefix); // 'user'
-console.log(team.prefix); // 'team'
-console.log(user.suffix === team.suffix); // true
+```sh
+bun install
+bun run build                 # needs wasm-opt (Binaryen) on PATH
+bun run build --no-wasm-opt   # local build without Binaryen
+bun run test
 ```
-
-Use `equals()` for value comparison. JavaScript `===`, `Map`, and `Set` still
-compare object identity; use the canonical string as a value-based map key.
-
-```js
-const copy = Id.parse(user.toString());
-user.equals(copy); // true
-JSON.stringify({ id: user }); // {"id":"user_..."}
-```
-
-Conversion factories validate their inputs:
-
-```js
-Id.fromBytes(user.toBytes()); // exactly 16 bytes, big-endian
-Id.fromBigInt(user.toBigInt()); // unsigned 128-bit bigint, valid encoded prefix
-Id.tryParse('invalid'); // undefined, rather than throwing
-```
-
-`new Id(bytes)` remains available. `parse()` throws for invalid strings;
-`tryParse()` accepts `unknown` and returns `undefined` for non-strings or invalid
-identifiers; `test()` accepts `unknown` and returns `false` for those inputs.
-Throwing string APIs reject non-strings with `InvalidType`. Byte factories accept
-only `Uint8Array` (including Node `Buffer`), rejecting other arrays and views
-with `InvalidType`.
-
-Validation errors are standard JavaScript errors with `name: 'SouvenirError'` and a
-stable `code`. Length errors include numeric `expected` and `found` fields;
-character errors include the offending Unicode character in `found`. String
-length errors count UTF-8 bytes.
-
-```js
-try {
-  Id.fromBytes(new Uint8Array(3));
-} catch (error) {
-  console.log(error.code);     // 'InvalidLength'
-  console.log(error.expected); // 16
-  console.log(error.found);    // 3
-}
-```
-
-Codes are `InvalidData`, `InvalidPrefix`, `InvalidChar`, `InvalidFormat`,
-`InvalidLength`, `InvalidType`, `InvalidRange`, and `RandomnessUnavailable`.
-`SouvenirError` and `SouvenirErrorCode` are exported TypeScript types, not runtime constructors.
-Negative or oversized BigInts are rejected without truncation. An in-range
-BigInt must also encode a valid identifier.

@@ -1,0 +1,18 @@
+[package]
+name = "souvenir-integration-tests"
+description = "Database integration tests for souvenir (not published)."
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+souvenir = { workspace = true, features = ["diesel", "sqlx", "uuid", "postgres", "mysql", "sqlite"] }
+sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio", "macros", "sqlite", "postgres", "mysql"] }
+
+[dev-dependencies]
+diesel = { version = "2.2.12", default-features = false, features = ["sqlite", "postgres"] }
+libsqlite3-sys = { version = "0.30", features = ["bundled"] }
+pq-sys = { version = "0.7", features = ["bundled"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

@@ -11,60 +11,76 @@ env:
 
 jobs:
   test:
-    name: Test
+    name: Test (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        build: [stable, beta, nightly, macos, win64, mingw]
         include:
-          - build: stable
-            os: ubuntu-latest
-            rust: stable
-          - build: beta
-            os: ubuntu-latest
-            rust: beta
-          - build: nightly
-            os: ubuntu-latest
-            rust: nightly
-          - build: macos
-            os: macos-latest
-            rust: stable
-          - build: win64
-            os: windows-latest
-            rust: stable-x86_64-pc-windows-msvc
-          - build: mingw
-            os: windows-latest
-            rust: stable-x86_64-pc-windows-gnu
+          - { name: stable, os: ubuntu-latest, rust: stable, args: --all-features }
+          - { name: beta, os: ubuntu-latest, rust: beta, args: --all-features }
+          - { name: nightly, os: ubuntu-latest, rust: nightly, args: --all-features }
+          - { name: macos, os: macos-latest, rust: stable, args: --all-features }
+          - { name: win64, os: windows-latest, rust: stable-x86_64-pc-windows-msvc, args: --all-features }
+          - { name: mingw, os: windows-latest, rust: stable-x86_64-pc-windows-gnu, args: --all-features }
+          - { name: msrv, os: ubuntu-latest, rust: "1.87.0", args: "" }
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust
-        run: |
-          rustup update ${{ matrix.rust }} --no-self-update
-          rustup default ${{ matrix.rust }}
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
       - name: Run tests
-        run: cargo test --verbose --all-features
-  msrv:
-    name: MSRV
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        run: |
-          rustup update 1.86.0 --no-self-update
-          rustup default 1.86.0
-      - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --workspace --exclude souvenir-integration-tests --verbose ${{ matrix.args }}
+
   lint:
-    name: Lint
+    name: Lint, docs and packaging
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Install Rust
-      run: |
-        rustup update stable --no-self-update
-        rustup default stable
-        rustup component add clippy
-    - name: Run formatter
-      run: cargo fmt --all --check
-    - name: Run clippy
-      run: cargo clippy --verbose -- -D warnings
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Docs
+        run: cargo doc --workspace --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: Tests without the getrandom feature
+        run: cargo test -p souvenir --no-default-features
+      - name: Builds for WebAssembly without getrandom
+        run: cargo check -p souvenir --no-default-features --features macros,serde --target wasm32-unknown-unknown
+      - name: Package crates
+        run: cargo package --workspace --exclude souvenir-wasm --exclude souvenir-integration-tests
+
+  db:
+    name: Database integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: souvenir_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: souvenir_test
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -uroot -proot" --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      SOUVENIR_TEST_PG_URL: postgres://postgres:postgres@localhost:5432/souvenir_test
+      SOUVENIR_TEST_MYSQL_URL: mysql://root:root@127.0.0.1:3306/souvenir_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run integration tests
+        run: cargo test -p souvenir-integration-tests --verbose
