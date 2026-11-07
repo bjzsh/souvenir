@@ -3,7 +3,7 @@ members = [".", "souvenir-*", "integration-tests"]
 resolver = "3"
 
 [workspace.package]
-version = "0.7.0"
+version = "0.7.0-alpha.1"
 edition = "2024"
 authors = ["Brian Shao"]
 license = "MIT"
@@ -53,8 +53,8 @@ sqlite = ["diesel?/sqlite", "sqlx?/sqlite"]
 souvenir-macros = { workspace = true }
 
 [workspace.dependencies]
-souvenir-macros = { version = "=0.7.0", path = "souvenir-macros" }
-souvenir = { version = "=0.7.0", path = "." }
+souvenir-macros = { version = "=0.7.0-alpha.1", path = "souvenir-macros" }
+souvenir = { version = "=0.7.0-alpha.1", path = "." }
 
 [dependencies]
 souvenir-macros = { workspace = true, optional = true }
