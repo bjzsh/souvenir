@@ -1,3 +1,4 @@
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![forbid(unsafe_code)]
 // Library code never panics at run time: no explicit panics, and no
 // `unwrap`/`expect`. (Panics in `const` evaluation, such as an invalid
@@ -18,13 +19,26 @@
 // examples run as doctests. The examples need the default features; without
 // them, a one-line summary stands in.
 #![cfg_attr(
-    all(feature = "getrandom", feature = "macros", feature = "serde"),
+    all(
+        feature = "std",
+        feature = "getrandom",
+        feature = "macros",
+        feature = "serde"
+    ),
     doc = include_str!("../README.md")
 )]
 #![cfg_attr(
-    not(all(feature = "getrandom", feature = "macros", feature = "serde")),
+    not(all(
+        feature = "std",
+        feature = "getrandom",
+        feature = "macros",
+        feature = "serde"
+    )),
     doc = "Type-safe, sortable, prefixed IDs. See the README for the guide."
 )]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 #[macro_use]
 mod util;

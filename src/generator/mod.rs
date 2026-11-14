@@ -21,6 +21,7 @@ pub(crate) use clock::ClockExt;
 
 #[cfg(feature = "getrandom")]
 pub use providers::OsRandom;
+#[cfg(feature = "std")]
 pub use providers::SystemClock;
 
 pub use source::RandomSource;

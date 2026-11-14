@@ -156,8 +156,12 @@ fn the_generator_trait_abstracts_over_generators() {
             .timestamp_ms(),
         7
     );
-    let (e, _) = two(&mut boxed);
-    assert_eq!(e.timestamp_ms(), 7);
+    // `Box<G>` is a generator with the `alloc` feature.
+    #[cfg(feature = "alloc")]
+    {
+        let (e, _) = two(&mut boxed);
+        assert_eq!(e.timestamp_ms(), 7);
+    }
 
     /// Scripted IDs, as a test might use.
     struct Scripted(Vec<Souvenir>);
@@ -173,7 +177,7 @@ fn the_generator_trait_abstracts_over_generators() {
 }
 
 #[test]
-#[cfg(feature = "getrandom")]
+#[cfg(all(feature = "getrandom", feature = "std"))]
 fn system_entry_points_smoke() {
     use std::time::{SystemTime, UNIX_EPOCH};
     let now = || {

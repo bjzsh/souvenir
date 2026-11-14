@@ -40,7 +40,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-          targets: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown, thumbv7em-none-eabihf
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy
@@ -49,8 +49,12 @@ jobs:
         run: cargo doc --workspace --all-features --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
-      - name: Tests without the getrandom feature
+      - name: Tests without default features
         run: cargo test -p souvenir --no-default-features
+      - name: Tests with std but without getrandom
+        run: cargo test -p souvenir --no-default-features --features std
+      - name: Builds without the standard library
+        run: cargo check -p souvenir --no-default-features --features macros,serde,uuid,alloc --target thumbv7em-none-eabihf
       - name: Builds for WebAssembly without getrandom
         run: cargo check -p souvenir --no-default-features --features macros,serde --target wasm32-unknown-unknown
       - name: Package crates

@@ -71,7 +71,7 @@ fn conversions() {
 
 #[test]
 fn generation() {
-    #[cfg(feature = "getrandom")]
+    #[cfg(all(feature = "getrandom", feature = "std"))]
     assert_eq!(Id::<User>::new().unwrap().prefix(), "user");
     let mut generator = MonotonicGenerator::with_sources(random(), || Ok(5));
     let b: Id<Org> = generator.generate().unwrap();
@@ -138,6 +138,7 @@ fn prefix_values() {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn timestamp_as_system_time() {
     use std::time::{Duration, UNIX_EPOCH};
     let id: Id<User> = TEXT.parse().unwrap();

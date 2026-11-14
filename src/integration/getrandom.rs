@@ -8,7 +8,7 @@ impl Souvenir {
     /// prefix created in the same millisecond are in random order; use a
     /// [`MonotonicGenerator`](crate::MonotonicGenerator) if that matters.
     ///
-    /// Needs the `getrandom` feature (on by default).
+    /// Needs the `std` and `getrandom` features (on by default).
     ///
     /// ```
     /// use souvenir::{Souvenir, prefix};
@@ -23,8 +23,8 @@ impl Souvenir {
 
 impl<T: Tagged> Id<T> {
     /// Generate a new ID using the system clock and the operating system's
-    /// CSPRNG. See [`Souvenir::new`]. Needs the `getrandom` feature (on by
-    /// default).
+    /// CSPRNG. See [`Souvenir::new`]. Needs the `std` and `getrandom`
+    /// features (on by default).
     pub fn new() -> Result<Self> {
         Souvenir::new(T::PREFIX).map(Self::from_untyped_unchecked)
     }

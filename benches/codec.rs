@@ -88,7 +88,7 @@ fn generation(c: &mut Criterion) {
     c.bench_function("generate monotonic (no CSPRNG, fixed clock)", |b| {
         b.iter(|| monotonic_no_rng.generate_untyped(black_box(prefix!("invoice"))))
     });
-    #[cfg(feature = "getrandom")]
+    #[cfg(all(feature = "getrandom", feature = "std"))]
     c.bench_function("Souvenir::new (system clock + getrandom)", |b| {
         b.iter(|| Souvenir::new(black_box(prefix!("invoice"))))
     });

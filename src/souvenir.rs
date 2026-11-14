@@ -8,6 +8,7 @@ use crate::spec::{
 use crate::util::ascii;
 use core::fmt;
 use core::str::FromStr;
+#[cfg(feature = "std")]
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// A Souvenir ID whose prefix is only known at run time.
@@ -34,7 +35,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(
     feature = "diesel",
-    derive(::diesel::AsExpression, ::diesel::FromSqlRow),
+    derive(::diesel::expression::AsExpression, ::diesel::deserialize::FromSqlRow),
     diesel(sql_type = ::diesel::sql_types::Text),
     diesel(sql_type = ::diesel::sql_types::Binary)
 )]
@@ -182,7 +183,9 @@ impl Souvenir {
     }
 
     /// Creation time as a [`SystemTime`]. For Unix milliseconds, use
-    /// [`timestamp_ms`](Self::timestamp_ms).
+    /// [`timestamp_ms`](Self::timestamp_ms). Needs the `std` feature (on by
+    /// default).
+    #[cfg(feature = "std")]
     #[must_use]
     #[inline]
     pub fn timestamp(&self) -> SystemTime {

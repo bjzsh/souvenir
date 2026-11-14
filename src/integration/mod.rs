@@ -3,7 +3,7 @@
 
 #[cfg(feature = "diesel")]
 mod diesel;
-#[cfg(feature = "getrandom")]
+#[cfg(all(feature = "getrandom", feature = "std"))]
 pub(crate) mod getrandom;
 #[cfg(feature = "serde")]
 mod serde;

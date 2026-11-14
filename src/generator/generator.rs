@@ -16,7 +16,7 @@ use crate::{Id, Prefix, Result, Souvenir, Tagged};
 ///     ids.generate()
 /// }
 ///
-/// # #[cfg(feature = "getrandom")] {
+/// # #[cfg(all(feature = "getrandom", feature = "std"))] {
 /// let mut ids = MonotonicGenerator::new();
 /// let a = record(&mut ids).unwrap();
 /// let b = record(&mut ids).unwrap();
@@ -67,7 +67,8 @@ impl<G: Generator + ?Sized> Generator for &mut G {
     }
 }
 
-impl<G: Generator + ?Sized> Generator for Box<G> {
+#[cfg(feature = "alloc")]
+impl<G: Generator + ?Sized> Generator for alloc::boxed::Box<G> {
     fn generate_untyped(&mut self, prefix: Prefix) -> Result<Souvenir> {
         (**self).generate_untyped(prefix)
     }

@@ -1,6 +1,6 @@
 use crate::{Error, Result, generator::Clock};
 
-/// The system's wall clock.
+/// The system's wall clock. Needs the `std` feature (on by default).
 ///
 /// `wasm32-unknown-unknown` has no system clock, so there every reading
 /// fails with [`Error::ClockFailure`]. Give generators a clock of your own on

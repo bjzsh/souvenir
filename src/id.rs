@@ -9,6 +9,7 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::str::FromStr;
+#[cfg(feature = "std")]
 use std::time::SystemTime;
 
 /// An ID whose prefix is fixed by the type `T`, usually the record it
@@ -32,7 +33,7 @@ use std::time::SystemTime;
 #[repr(transparent)]
 #[cfg_attr(
     feature = "diesel",
-    derive(::diesel::AsExpression, ::diesel::FromSqlRow),
+    derive(::diesel::expression::AsExpression, ::diesel::deserialize::FromSqlRow),
     diesel(sql_type = ::diesel::sql_types::Text),
     diesel(sql_type = ::diesel::sql_types::Binary)
 )]
@@ -119,7 +120,9 @@ impl<T: Tagged> Id<T> {
     }
 
     /// Creation time as a [`SystemTime`]. For Unix milliseconds, use
-    /// [`timestamp_ms`](Self::timestamp_ms).
+    /// [`timestamp_ms`](Self::timestamp_ms). Needs the `std` feature (on by
+    /// default).
+    #[cfg(feature = "std")]
     #[must_use]
     #[inline]
     pub fn timestamp(&self) -> SystemTime {

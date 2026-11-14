@@ -151,7 +151,9 @@ assert_eq!(id.to_string(), "user_00t35pg1sg000000000000000");
 
 | Feature  | Default | Provides |
 |----------|---------|----------|
-| `getrandom` | yes  | generating IDs from the OS random source (`Souvenir::new`, `Id::new`, `RandomGenerator::new`, `MonotonicGenerator::new`). Turn it off for parse-only builds, such as WebAssembly without a `getrandom` backend; generators can still take any random source. |
+| `std`    | yes     | the system clock, `timestamp()` as a `SystemTime`, and the database integrations. Without it the crate is `no_std`: IDs still parse, format and convert, and generators take a clock of your own. |
+| `alloc`  | yes     | `Generator` for `Box<G>`; turned on by `std` |
+| `getrandom` | yes  | the OS random source, `OsRandom`. With `std`, also `Souvenir::new`, `Id::new`, `RandomGenerator::new` and `MonotonicGenerator::new`. Turn it off for parse-only builds, such as WebAssembly without a `getrandom` backend; generators can still take any random source. |
 | `macros` | yes     | `#[derive(Tagged)]`, `#[derive(Identifiable)]`, `id!` |
 | `serde`  | yes     | text form in human-readable formats, 20 bytes otherwise |
 | `sqlx`   |         | with `postgres`, `mysql`, `sqlite`; see [Storage](#storage) |

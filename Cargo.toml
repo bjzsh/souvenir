@@ -31,16 +31,22 @@ repository.workspace = true
 all-features = true
 
 [features]
-default = ["getrandom", "macros", "serde"]
-all = ["getrandom", "macros", "diesel", "serde", "sqlx", "uuid", "postgres", "mysql", "sqlite"]
+default = ["std", "getrandom", "macros", "serde"]
+
+# The standard library: the system clock (and so `Souvenir::new`, `Id::new`
+# and the generators' `new`), `timestamp()`, and the database integrations.
+# Without it the crate is `no_std`.
+std = ["alloc", "serde?/std", "uuid?/std"]
+# `Generator` for `Box<G>`.
+alloc = []
 
 getrandom = ["dep:getrandom"]
 macros = ["dep:souvenir-macros"]
 
 # The database integrations store `Storage::Uuid` IDs through `uuid::Uuid`.
-diesel = ["dep:diesel", "uuid"]
+diesel = ["dep:diesel", "uuid", "std"]
 serde = ["dep:serde"]
-sqlx = ["dep:sqlx", "uuid"]
+sqlx = ["dep:sqlx", "uuid", "std"]
 uuid = ["dep:uuid"]
 
 postgres = ["diesel?/postgres_backend", "sqlx?/postgres"]
@@ -59,9 +65,9 @@ souvenir = { version = "=0.7.0-alpha.1", path = "." }
 [dependencies]
 souvenir-macros = { workspace = true, optional = true }
 getrandom = { version = "0.3.4", optional = true }
-diesel = { version = "2.2.12", optional = true }
-serde = { version = "1.0.219", optional = true }
-sqlx = { version = "0.8.6", optional = true }
+diesel = { version = "2.2.12", optional = true, default-features = false }
+serde = { version = "1.0.219", optional = true, default-features = false }
+sqlx = { version = "0.8.6", optional = true, default-features = false }
 uuid = { version = "1.18", optional = true, default-features = false }
 
 [dev-dependencies]
