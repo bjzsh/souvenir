@@ -143,3 +143,96 @@ fn parse_expecting() {
         }
     }
 }
+
+fn random_hex(case: &Value) -> u128 {
+    u128::from_str_radix(case["random_hex"].as_str().unwrap(), 16).unwrap()
+}
+
+/// Check a result against a case's `error` code, or else its `text`.
+fn check(result: Result<Souvenir, Error>, case: &Value) {
+    match case.get("error") {
+        Some(code) => assert_eq!(
+            result.map_err(error_code),
+            Err(code.as_str().unwrap()),
+            "{}",
+            case["why"]
+        ),
+        None => assert_eq!(
+            result.unwrap().to_string(),
+            case["text"].as_str().unwrap(),
+            "{}",
+            case["why"]
+        ),
+    }
+}
+
+#[test]
+fn from_parts() {
+    let v = vectors();
+    for case in v["from_parts"].as_array().unwrap() {
+        let ts = case["timestamp_ms"].as_u64().unwrap();
+        let result = Prefix::parse(case["prefix"].as_str().unwrap())
+            .and_then(|p| Souvenir::from_parts(p, ts, random_hex(case)));
+        check(result, case);
+    }
+}
+
+#[cfg(feature = "uuid")]
+#[test]
+fn from_uuid() {
+    let v = vectors();
+    for case in v["from_uuid"].as_array().unwrap() {
+        let uuid = uuid::Uuid::parse_str(case["uuid"].as_str().unwrap()).unwrap();
+        let result = Prefix::parse(case["prefix"].as_str().unwrap())
+            .and_then(|p| Souvenir::from_uuid(p, uuid));
+        if let Ok(id) = result {
+            assert_eq!(id.to_uuid(), uuid, "{}", case["why"]);
+        }
+        check(result, case);
+    }
+}
+
+#[test]
+fn monotonic() {
+    use souvenir::{Generator, MonotonicGenerator};
+    use std::cell::{Cell, RefCell};
+    use std::collections::VecDeque;
+
+    let v = vectors();
+    for sequence in v["monotonic"].as_array().unwrap() {
+        let now = Cell::new(0u64);
+        let draws = RefCell::new(VecDeque::<u128>::new());
+        // `csprng_bits(n)` returns the scripted value: the generator's
+        // big-endian read of the bytes it asks for gives it back.
+        let random = |buf: &mut [u8]| {
+            let value = draws.borrow_mut().pop_front().expect("an unscripted draw");
+            let bytes = value.to_be_bytes();
+            buf.copy_from_slice(&bytes[bytes.len() - buf.len()..]);
+            Ok(())
+        };
+        let mut generator = MonotonicGenerator::with_sources(random, || Ok(now.get()));
+
+        let mut last_body = None;
+        for case in sequence["steps"].as_array().unwrap() {
+            now.set(case["now_ms"].as_u64().unwrap());
+            draws.borrow_mut().extend(
+                case["draws_hex"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|d| u128::from_str_radix(d.as_str().unwrap(), 16).unwrap()),
+            );
+            let prefix = Prefix::parse(case["prefix"].as_str().unwrap()).unwrap();
+            let result = generator.generate_untyped(prefix);
+            assert!(draws.borrow().is_empty(), "unused draw: {}", case["why"]);
+            if let Ok(id) = result {
+                assert_eq!(id.timestamp_ms(), case["timestamp_ms"].as_u64().unwrap());
+                assert_eq!(id.random(), random_hex(case));
+                let body = (id.timestamp_ms(), id.random());
+                assert!(last_body < Some(body), "{}", case["why"]);
+                last_body = Some(body);
+            }
+            check(result, case);
+        }
+    }
+}

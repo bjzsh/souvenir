@@ -24,7 +24,8 @@ export function newId<const P extends string>(prefix: P): SouvenirId<P> {
 
 /**
  * Generate a new ID from the module-wide monotonic generator. Each result is
- * greater than the previous one, even within the same millisecond.
+ * greater than every earlier one with the same prefix, even within the same
+ * millisecond.
  */
 export function newMonotonicId<const P extends string>(prefix: P): SouvenirId<P> {
   return raw.newMonotonicId(prefix) as SouvenirId<P>;

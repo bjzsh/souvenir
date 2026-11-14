@@ -4,7 +4,7 @@ use crate::{Id, Prefix, Result, Souvenir, Tagged};
 ///
 /// Accept `impl Generator` (or `&mut dyn Generator`) where code needs new IDs
 /// but the caller should decide how they are made: [`RandomGenerator`] for
-/// independent IDs, [`MonotonicGenerator`] for strictly increasing ones, or a
+/// independent IDs, [`MonotonicGenerator`] for ones that increase within a prefix, or a
 /// generator of your own.
 ///
 /// ```

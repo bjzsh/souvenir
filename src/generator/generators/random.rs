@@ -5,7 +5,7 @@ use crate::{Generator, Prefix, Result, Souvenir};
 ///
 /// It keeps no state between IDs: IDs with the same prefix created in the
 /// same millisecond are in random order. Use a [`MonotonicGenerator`] when
-/// they must be strictly increasing.
+/// they must be in the order they were created.
 ///
 /// [`new`](RandomGenerator#method.new) reads the system clock and the
 /// operating system's CSPRNG; [`with_sources`](Self::with_sources) takes your

@@ -2,8 +2,8 @@ use crate::generator::{self, Clock, ClockExt, RandomSource, RandomSourceExt};
 use crate::spec::{RANDOM_MAX, TIMESTAMP_MAX};
 use crate::{Error, Generator, Prefix, Result, Souvenir};
 
-/// Generates strictly increasing IDs, even when the clock stalls or goes
-/// backwards:
+/// Generates IDs that are strictly increasing within each prefix, even when
+/// the clock stalls or goes backwards:
 ///
 /// - IDs created in the same millisecond (or after the clock went backwards)
 ///   reuse the last timestamp and add a random step of 1 to 2^32 to the
@@ -11,8 +11,16 @@ use crate::{Error, Generator, Prefix, Result, Souvenir};
 /// - If the random field would overflow, the timestamp moves forward by one
 ///   millisecond. Under bursts or clock rollback, timestamps can therefore
 ///   run slightly ahead of the wall clock.
-/// - The guarantee holds per generator, across all prefixes. Across
-///   generators, IDs from the same millisecond are in arbitrary order.
+/// - One generator serves every prefix: the timestamp and random bits of
+///   each ID are greater than those of the one before, whatever their
+///   prefixes. IDs with different prefixes still sort by prefix first, so
+///   compare [`timestamp_ms`](Souvenir::timestamp_ms) and
+///   [`random`](Souvenir::random) to order those by creation.
+/// - The guarantee holds per generator. Across generators, IDs from the same
+///   millisecond are in arbitrary order.
+/// - Within one millisecond, the next ID is one of 2^32 values, so it is
+///   easier to guess than a [`RandomGenerator`]'s. IDs are not secrets
+///   either way.
 ///
 /// Its IDs are indistinguishable from a [`RandomGenerator`]'s. To share one
 /// generator between threads, put it in a `Mutex`.

@@ -125,9 +125,10 @@ fn main() -> Result<(), souvenir::Error> {
 }
 ```
 
-It stays strictly increasing even if the clock stalls or goes backwards, and
-it may stamp IDs slightly ahead of the wall clock to do so. To share one
-between threads, put it in a `Mutex`.
+IDs with the same prefix stay strictly increasing even if the clock stalls or
+goes backwards, and the generator may stamp IDs slightly ahead of the wall
+clock to keep them so. IDs with different prefixes sort by prefix first, as
+always. To share a generator between threads, put it in a `Mutex`.
 
 Code that needs new IDs can accept any `impl Generator`, so its caller
 chooses: a `RandomGenerator` (what `Souvenir::new` uses), a
@@ -278,6 +279,8 @@ URLs, use the string as-is: every character is URL-safe.
 - **Ordering is per prefix,** not global across kinds. Use `timestamp_ms()` to
   order across kinds.
 - **IDs reveal their creation time,** like UUIDv7 and ULID.
+- **IDs are not secrets.** Don't use one as a token or an unguessable link;
+  authorize every access to a record.
 - **Uniqueness is probabilistic.** Two IDs can only collide if they have the
   same prefix and millisecond. Generating 1 million IDs per second with one
   prefix, expect about 8 * 10^-7 collisions per year; at 100 million per second,

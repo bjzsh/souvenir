@@ -47,7 +47,8 @@ pub fn new_id(prefix_text: &StringInput) -> JsResult<String> {
 }
 
 /// Generate a new ID from the module-wide monotonic generator: each result
-/// is greater than the previous one, even within one millisecond.
+/// is greater than every earlier one with the same prefix, even within one
+/// millisecond.
 #[wasm_bindgen(js_name = newMonotonicId)]
 pub fn new_monotonic_id(prefix_text: &StringInput) -> JsResult<String> {
     let prefix = prefix(prefix_text)?;

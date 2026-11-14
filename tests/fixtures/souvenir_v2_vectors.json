@@ -289,6 +289,48 @@
       "why": "non-ASCII"
     },
     {
+      "kind": "text",
+      "input": "",
+      "error": "MissingSeparator",
+      "why": "empty input"
+    },
+    {
+      "kind": "text",
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "error": "MissingSeparator",
+      "why": "long input, no separator"
+    },
+    {
+      "kind": "text",
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_00t35pg1sgajz7jf1pz84mv4e",
+      "error": "InvalidPrefix",
+      "why": "long input, long prefix"
+    },
+    {
+      "kind": "text",
+      "input": "user_0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "error": "InvalidLength",
+      "why": "long input, long suffix"
+    },
+    {
+      "kind": "text",
+      "input": "user_00t35pg1sgajz7jf1pz84mv4!0",
+      "error": "InvalidLength",
+      "why": "wrong length is reported before an invalid character"
+    },
+    {
+      "kind": "text",
+      "input": "user_40t35pg1sgajz7jf1pz84mv4i",
+      "error": "InvalidCharacter",
+      "why": "an invalid character is reported before NonCanonical"
+    },
+    {
+      "kind": "text",
+      "input": "us\u00e9r_0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "error": "InvalidCharacter",
+      "why": "non-ASCII is reported before anything else"
+    },
+    {
       "kind": "bytes",
       "input": "00000000000000000000000000000000000000",
       "error": "InvalidLength",
@@ -384,6 +426,268 @@
       "input": "garbage",
       "error": "MissingSeparator",
       "why": "valid expected, invalid input"
+    }
+  ],
+  "from_parts": [
+    {
+      "prefix": "user",
+      "timestamp_ms": 281474976710655,
+      "random_hex": "3ffffffffffffffffff",
+      "text": "user_3zzzzzzzzzzzzzzzzzzzzzzzz",
+      "why": "largest timestamp and random"
+    },
+    {
+      "prefix": "user",
+      "timestamp_ms": 281474976710656,
+      "random_hex": "0000000000000000000",
+      "error": "TimestampOutOfRange",
+      "why": "timestamp 2^48"
+    },
+    {
+      "prefix": "user",
+      "timestamp_ms": 0,
+      "random_hex": "4000000000000000000",
+      "error": "RandomOutOfRange",
+      "why": "random 2^74"
+    },
+    {
+      "prefix": "user",
+      "timestamp_ms": 281474976710656,
+      "random_hex": "4000000000000000000",
+      "error": "TimestampOutOfRange",
+      "why": "the timestamp is checked before the random value"
+    },
+    {
+      "prefix": "User",
+      "timestamp_ms": 281474976710656,
+      "random_hex": "4000000000000000000",
+      "error": "InvalidPrefix",
+      "why": "the prefix is checked first"
+    }
+  ],
+  "from_uuid": [
+    {
+      "prefix": "user",
+      "uuid": "0193a1b2-c3d4-7abc-8123-56789abcdef0",
+      "text": "user_00s78djrfaaqg28tpf2dbsqqg",
+      "why": "variant bits 10, low"
+    },
+    {
+      "prefix": "user",
+      "uuid": "0193a1b2-c3d4-7abc-bfff-56789abcdef0",
+      "text": "user_00s78djrfaaqkzztpf2dbsqqg",
+      "why": "variant bits 10, high"
+    },
+    {
+      "prefix": "user",
+      "uuid": "ffffffff-ffff-7fff-bfff-ffffffffffff",
+      "text": "user_3zzzzzzzzzzzzzzzzzzzzzzzz",
+      "why": "largest UUIDv7"
+    },
+    {
+      "prefix": "user",
+      "uuid": "0193a1b2-c3d4-4abc-8123-56789abcdef0",
+      "error": "NotUuidV7",
+      "why": "version 4"
+    },
+    {
+      "prefix": "user",
+      "uuid": "0193a1b2-c3d4-8abc-8123-56789abcdef0",
+      "error": "NotUuidV7",
+      "why": "version 8"
+    },
+    {
+      "prefix": "user",
+      "uuid": "0193a1b2-c3d4-7abc-0123-56789abcdef0",
+      "error": "NotUuidV7",
+      "why": "variant bits 00"
+    },
+    {
+      "prefix": "user",
+      "uuid": "0193a1b2-c3d4-7abc-4123-56789abcdef0",
+      "error": "NotUuidV7",
+      "why": "variant bits 01"
+    },
+    {
+      "prefix": "user",
+      "uuid": "0193a1b2-c3d4-7abc-c123-56789abcdef0",
+      "error": "NotUuidV7",
+      "why": "variant bits 11"
+    },
+    {
+      "prefix": "user",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "error": "NotUuidV7",
+      "why": "nil UUID"
+    },
+    {
+      "prefix": "user",
+      "uuid": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+      "error": "NotUuidV7",
+      "why": "max UUID"
+    },
+    {
+      "prefix": "User",
+      "uuid": "0193a1b2-c3d4-4abc-8123-56789abcdef0",
+      "error": "InvalidPrefix",
+      "why": "the prefix is checked first"
+    }
+  ],
+  "monotonic": [
+    {
+      "name": "stalls, rollback and overflow",
+      "steps": [
+        {
+          "prefix": "event",
+          "now_ms": 1793531580000,
+          "draws_hex": [
+            "5"
+          ],
+          "timestamp_ms": 1793531580000,
+          "random_hex": "0000000000000000005",
+          "text": "event_00t35pg1sg000000000000005",
+          "why": "first ID: 74 fresh bits"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 1793531580000,
+          "draws_hex": [
+            "0"
+          ],
+          "timestamp_ms": 1793531580000,
+          "random_hex": "0000000000000000006",
+          "text": "event_00t35pg1sg000000000000006",
+          "why": "same millisecond: smallest step, 1"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 1793531579999,
+          "draws_hex": [
+            "ffffffff"
+          ],
+          "timestamp_ms": 1793531580000,
+          "random_hex": "0000000000100000006",
+          "text": "event_00t35pg1sg000000004000006",
+          "why": "clock went back: keep the timestamp; largest step, 2^32"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 1793531580001,
+          "draws_hex": [
+            "3ffffffffffffffffff"
+          ],
+          "timestamp_ms": 1793531580001,
+          "random_hex": "3ffffffffffffffffff",
+          "text": "event_00t35pg1sgzzzzzzzzzzzzzzz",
+          "why": "clock moved on: 74 fresh bits"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 1793531580001,
+          "draws_hex": [
+            "0",
+            "7"
+          ],
+          "timestamp_ms": 1793531580002,
+          "random_hex": "0000000000000000007",
+          "text": "event_00t35pg1sh000000000000007",
+          "why": "random field overflows: borrow the next millisecond and draw 74 fresh bits"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 1793531580001,
+          "draws_hex": [
+            "1"
+          ],
+          "timestamp_ms": 1793531580002,
+          "random_hex": "0000000000000000009",
+          "text": "event_00t35pg1sh000000000000009",
+          "why": "clock is now behind the generator: step from the borrowed millisecond"
+        },
+        {
+          "prefix": "org",
+          "now_ms": 1793531580002,
+          "draws_hex": [
+            "0"
+          ],
+          "timestamp_ms": 1793531580002,
+          "random_hex": "000000000000000000a",
+          "text": "org_00t35pg1sh00000000000000a",
+          "why": "another prefix shares the state; this ID is less than the one before, though its body is greater"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 1793531580003,
+          "draws_hex": [
+            "3fffffffffffffffffe"
+          ],
+          "timestamp_ms": 1793531580003,
+          "random_hex": "3fffffffffffffffffe",
+          "text": "event_00t35pg1shzzzzzzzzzzzzzzy",
+          "why": "clock moved on"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 1793531580003,
+          "draws_hex": [
+            "0"
+          ],
+          "timestamp_ms": 1793531580003,
+          "random_hex": "3ffffffffffffffffff",
+          "text": "event_00t35pg1shzzzzzzzzzzzzzzz",
+          "why": "a step that lands exactly on 2^74 - 1 does not overflow"
+        }
+      ]
+    },
+    {
+      "name": "end of the timestamp range",
+      "steps": [
+        {
+          "prefix": "event",
+          "now_ms": 281474976710655,
+          "draws_hex": [
+            "3ffffffffffffffffff"
+          ],
+          "timestamp_ms": 281474976710655,
+          "random_hex": "3ffffffffffffffffff",
+          "text": "event_3zzzzzzzzzzzzzzzzzzzzzzzz",
+          "why": "last millisecond, largest random"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 281474976710655,
+          "draws_hex": [
+            "0"
+          ],
+          "error": "TimestampOutOfRange",
+          "why": "overflow with no millisecond left"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 281474976710656,
+          "draws_hex": [],
+          "error": "ClockFailure",
+          "why": "a clock reading of 2^48 fails before any random draw"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 281474976710655,
+          "draws_hex": [
+            "0"
+          ],
+          "error": "TimestampOutOfRange",
+          "why": "the failures left the state unchanged"
+        },
+        {
+          "prefix": "event",
+          "now_ms": 281474976710654,
+          "draws_hex": [
+            "0"
+          ],
+          "error": "TimestampOutOfRange",
+          "why": "still failing after the clock goes back"
+        }
+      ]
     }
   ]
 }

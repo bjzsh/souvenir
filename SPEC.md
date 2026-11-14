@@ -3,7 +3,10 @@
 This document specifies the Souvenir ID format. The conformance vectors in
 [`tests/fixtures/souvenir_v2_vectors.json`](tests/fixtures/souvenir_v2_vectors.json)
 are normative alongside it: every implementation must pass all of them, with
-exactly the error codes they give.
+exactly the error codes they give. If this document and the vectors disagree,
+the vectors win and this document is corrected.
+
+Sections 1 to 9 are normative. Sections 10 to 12 are not.
 
 ## 1. Overview
 
@@ -66,7 +69,8 @@ integers `V`. Equality and hashing are defined on the bytes.
 | `217180147159 ... 2^38 - 1` | **Reserved** for future formats. Decoders reject these (`ReservedPrefix`); generators never produce them. |
 
 The reserved range is the extension mechanism for future versions of the
-format. There are no version bits.
+format. There are no version bits. Reserved values have no text form, so
+only decoding bytes can fail with `ReservedPrefix`.
 
 ### 3.2 No nil ID
 
@@ -78,10 +82,6 @@ All-zero bytes never decode as an ID, because prefix rank 0 is not any
 prefix. Zeroed memory, a defaulted column or a dropped field therefore fails
 with `ZeroPrefix` instead of becoming a valid-looking ID.
 
-Bindings for languages where a zero value cannot be avoided (such as a Go
-struct) may expose an `IsZero()` check, and must make formatting or encoding
-the zero value an error. No other API may accept or produce it.
-
 ### 3.3 Timestamp
 
 Unsigned milliseconds since the Unix epoch (UTC), 48 bits, valid until about
@@ -91,11 +91,38 @@ the year 10889. Decoders accept every 48-bit value.
 
 74 bits. Every value is valid on decode.
 
+### 3.5 Building from parts
+
+Checks run in this order, and the first failure is reported:
+
+```text
+from_parts(prefix, ts, random):
+    validate prefix                       else InvalidPrefix
+    if ts >= 2^48:                        error TimestampOutOfRange
+    if random >= 2^74:                    error RandomOutOfRange
+    return (rank(prefix) << 122) | (ts << 74) | random
+```
+
+### 3.6 Decoding bytes
+
+Checks run in this order, and the first failure is reported:
+
+```text
+from_bytes(b):
+    if len(b) != 20:                      error InvalidLength
+    p = the top 38 bits of b
+    if p == 0:                            error ZeroPrefix
+    if p >= PREFIX_RANK_LIMIT:            error ReservedPrefix
+    return b
+```
+
+Nothing else can fail: every timestamp and every random value is valid.
+
 ## 4. Prefixes
 
 A prefix is 1 to 8 characters, each in `a`-`z`. Nothing else is allowed: no
 digits, underscores or uppercase letters. That restriction is what keeps text
-order and binary order identical.
+order and binary order identical (section 12.2).
 
 A prefix is stored as its **rank in trie preorder**: lexicographic order,
 where a string comes before every longer string that starts with it
@@ -153,6 +180,10 @@ decode(s):
     return v
 ```
 
+The checks run in that order: a suffix of the wrong length is
+`InvalidLength` even if it also holds invalid characters, and an invalid
+character anywhere is reported before `NonCanonical`.
+
 Decoding is strict:
 
 - Lowercase only. `A`-`Z` are invalid characters.
@@ -188,15 +219,22 @@ Checks run in exactly this order, and the first failure is reported, so every
 implementation returns the same error for the same input:
 
 1. Input is not ASCII -> `InvalidCharacter`.
-2. Input is longer than 64 characters -> `InvalidLength`.
-3. Find the **last** `_`. None -> `MissingSeparator`.
-4. Validate the prefix (left of the separator) -> `InvalidPrefix`.
-5. Decode the suffix (right of the separator) per section 5 -> `InvalidLength`,
+2. Find the **last** `_`. None -> `MissingSeparator`.
+3. Validate the prefix (left of the separator) -> `InvalidPrefix`.
+4. Decode the suffix (right of the separator) per section 5 -> `InvalidLength`,
    `InvalidCharacter` or `NonCanonical`.
-6. Return `(rank(prefix) << 122) | body`.
+5. Return `(rank(prefix) << 122) | body`.
+
+The ASCII check comes first so that every later length means the same thing
+in every language. Languages count the length of a non-ASCII string
+differently (bytes, UTF-16 units, code points); for ASCII they all agree.
 
 Splitting on the last `_` is safe because `_` is not in the suffix alphabet.
 It also means `user_auth_...` is reported as an invalid prefix.
+
+There is no separate limit on the length of the input. Text that is too long
+fails at whichever step it reaches: with no `_` it is `MissingSeparator`,
+with a long prefix `InvalidPrefix`, with a long suffix `InvalidLength`.
 
 ### 6.4 Parsing with an expected prefix
 
@@ -231,33 +269,50 @@ never fall back to a weaker source.
 
 ### 7.2 Monotonic
 
-A monotonic generator guarantees that each ID it returns is greater than the
-previous one, including when the clock stalls or goes backwards. Its state,
-`(last_t, last_r)`, is shared across all prefixes.
+A monotonic generator guarantees that the body (timestamp, then random bits)
+of each ID it returns is greater than the body of the one before, including
+when the clock stalls or goes backwards. IDs with the same prefix are
+therefore strictly increasing.
+
+IDs with different prefixes are not: an ID's prefix sorts before its body, so
+an `org` ID is less than every `user` ID, whenever each was made. To order
+IDs of different prefixes by creation, compare their bodies.
+
+The generator's state is the body of the last ID it returned, shared across
+all prefixes. It starts empty.
 
 ```text
-new(prefix):
-    validate prefix; read and range-check t as above
+state: last = none                             # else (last_t, last_r)
+
+next(prefix):
+    validate prefix; read and range-check t as in section 7.1
     lock:
-        if t > last_t:
+        if last is none or t > last_t:
             r = csprng_bits(74)
         else:                                  # same ms, or clock went back
             t = last_t
             r = last_r + 1 + csprng_bits(32)   # random step in [1, 2^32]
             if r >= 2^74:                      # overflow: borrow the next ms
+                if last_t == 2^48 - 1:         error TimestampOutOfRange
                 t = last_t + 1
-                if t >= 2^48: error TimestampOutOfRange
                 r = csprng_bits(74)
-        last_t, last_r = t, r
+        last = (t, r)
     return (rank(prefix) << 122) | (t << 74) | r
 ```
 
+- The state changes only when an ID is returned. A failing clock or random
+  source, or running past the end of the timestamp range, leaves it as it
+  was.
 - Timestamps may run slightly ahead of the wall clock under bursts or clock
   rollback.
 - The guarantee holds per generator instance. Across instances, IDs from the
   same millisecond are in arbitrary order.
-- The random step keeps successive IDs hard to guess.
 - IDs from the two generators are indistinguishable.
+- The random step makes the next ID one of 2^32 values, not one of 2^74
+  (section 10).
+
+The `monotonic` vectors script a clock and the values `csprng_bits` returns,
+and give the ID each call must produce.
 
 ### 7.3 Collisions
 
@@ -268,8 +323,9 @@ per second, about 8 * 10^-3. These are the same figures as UUIDv7.
 
 ## 8. UUIDv7 bridge
 
-The 122-bit body maps bit-for-bit onto a UUIDv7. This lets a column whose
-type already implies the prefix store IDs in a native 16-byte `uuid`.
+The 122-bit body maps bit-for-bit onto a UUIDv7 (RFC 9562). This lets a
+column whose type already implies the prefix store IDs in a native 16-byte
+`uuid`.
 
 ```text
 to_uuid(id):
@@ -281,6 +337,7 @@ to_uuid(id):
          | (r & (2^62 - 1))        # rand_b = low 62 bits of r
 
 from_uuid(prefix, uuid):
+    validate prefix                          else InvalidPrefix
     require ((uuid >> 76) & 0xF) == 7        else NotUuidV7
     require ((uuid >> 62) & 0b11) == 0b10    else NotUuidV7
     ts = uuid >> 80
@@ -288,8 +345,16 @@ from_uuid(prefix, uuid):
     return from_parts(prefix, ts, r)
 ```
 
-The round trip is lossless. Within one prefix, UUID byte order equals ID
-order.
+The round trip is lossless in both directions: every ID has one UUIDv7, and
+every UUIDv7 with variant `0b10`, whatever generated it, is the body of one
+ID per prefix. An existing UUIDv7 column can therefore be read as Souvenir
+IDs without rewriting it. Within one prefix, UUID byte order equals ID order.
+
+A UUID given as bytes must be exactly 16 bytes (`InvalidLength`). Where an
+implementation accepts a UUID as text, it accepts only the 36-character
+hyphenated form (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`), with hex digits in
+either case: any other length is `InvalidLength`, and a wrong character is
+`InvalidCharacter`. `to_uuid` text is lowercase.
 
 ## 9. Errors
 
@@ -300,7 +365,7 @@ between implementations; codes may not.
 |---|---|
 | `InvalidPrefix` | A prefix (including the expected prefix of `parse_expecting`) is empty, longer than 8 characters, or contains anything outside `a`-`z` |
 | `MissingSeparator` | Text has no `_` |
-| `InvalidLength` | Suffix is not 25 characters; bytes are not 20; a UUID is not 16 bytes; text is over 64 characters |
+| `InvalidLength` | Suffix is not 25 characters; bytes are not 20; a UUID is not 16 bytes (or, as text, not 36 characters) |
 | `InvalidCharacter` | Text is not ASCII, or a suffix character is outside the alphabet |
 | `NonCanonical` | The suffix's first character is `4`-`z` (value >= 2^122) |
 | `ZeroPrefix` | The prefix field is 0, including all-zero bytes |
@@ -315,12 +380,25 @@ between implementations; codes may not.
 Bindings may add codes for errors specific to their language boundary (for
 example `InvalidType` in JavaScript for a non-string argument).
 
-## 10. Storage guidance
+## 10. Security considerations
 
-Non-normative. The recommended default everywhere is the **canonical text
-form**: it is the same in every table, API and log, joins with plain
-equality, and stays readable and self-describing without a Souvenir
-library.
+- **IDs are identifiers, not secrets.** Do not use one as a password, a
+  session token or an unguessable link.
+- **An ID reveals when it was created,** to the millisecond, and its prefix
+  reveals what kind of thing it identifies.
+- **Default IDs are hard to guess:** 74 bits from a CSPRNG per millisecond.
+- **Monotonic IDs are easier to guess.** Within one millisecond, each ID is
+  the one before plus a step of at most 2^32, so someone who has seen one ID
+  can find the next in about 2^32 attempts. Authorize every access to a
+  record; never rely on its ID being unknown.
+- **Never substitute a weaker random source.** A predictable source makes
+  IDs both guessable and likely to collide.
+
+## 11. Storage guidance
+
+The recommended default everywhere is the **canonical text form**: it is the
+same in every table, API and log, joins with plain equality, and stays
+readable and self-describing without a Souvenir library.
 
 | Representation | When |
 |---|---|
@@ -336,3 +414,33 @@ A Postgres domain for text IDs:
 CREATE DOMAIN souvenir AS text COLLATE "C"
   CHECK (VALUE ~ '^[a-z]{1,8}_[0-3][0-9a-hjkmnp-tv-z]{24}$');
 ```
+
+## 12. Rationale
+
+### 12.1 Field sizes
+
+- **48 + 74 bits** are the timestamp and random bits of a UUIDv7, which is
+  what makes the bridge in section 8 lossless. Together they are 122 bits,
+  which fit in 25 Base32 characters.
+- **38 bits** is the smallest field that holds every prefix of up to 8
+  letters (`S[8] < 2^38`), and brings the total to 160 bits: exactly 20
+  bytes.
+- **8 letters** is the longest prefix that fits. A ninth letter needs 43
+  bits, which no longer fits 20 bytes.
+
+### 12.2 Why text order equals binary order
+
+Take two IDs with prefixes `p` and `q`.
+
+- **Same prefix.** The texts differ only in their suffixes, which have the
+  same length and an alphabet in ascending order, so they compare as the
+  bodies do. The binary forms share their top 38 bits and compare by the
+  rest, which is the body.
+- **`p` is the start of a longer `q`.** Where `p`'s text has `_`, `q`'s has a
+  letter, and `_` (0x5F) is less than every letter (0x61 and up), so `p`'s ID
+  is first. In binary, trie preorder gives `p` the smaller rank.
+- **Otherwise** the prefixes first differ at some letter, which decides the
+  order of the texts and, through the rank, of the binary forms.
+
+This is why prefixes hold only `a`-`z`: an uppercase letter, a digit or an
+underscore sorts at or below the separator, and would break the second case.

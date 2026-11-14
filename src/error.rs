@@ -19,7 +19,7 @@ pub enum Error {
     InvalidPrefix,
     /// Text has no `_` separator.
     MissingSeparator,
-    /// Input has the wrong length (suffix, bytes, UUID, or text over 64 chars).
+    /// Input has the wrong length (a suffix that is not 25 characters, bytes that are not 20, a UUID that is not 16 bytes).
     InvalidLength,
     /// Text is not ASCII, or a suffix character is outside the alphabet.
     InvalidCharacter,

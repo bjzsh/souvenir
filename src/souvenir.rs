@@ -85,11 +85,7 @@ impl Souvenir {
         if !text.is_ascii() {
             return Err(Error::InvalidCharacter);
         }
-        // 2. Cheap length guard
-        if text.len() > Self::PARSE_GUARD_LEN {
-            return Err(Error::InvalidLength);
-        }
-        // 3. Last separator: drop bytes from the end until one is `_`.
+        // 2. Last separator: drop bytes from the end until one is `_`.
         let mut letters = text;
         loop {
             match letters {
@@ -102,9 +98,9 @@ impl Souvenir {
             }
         }
         let (_, suffix) = text.split_at(letters.len() + 1);
-        // 4. Prefix
+        // 3. Prefix
         let prefix = tri!(Prefix::from_letters(letters));
-        // 5. Suffix
+        // 4. Suffix
         let body = tri!(base32::decode(suffix));
         Ok(Self::pack(prefix, body))
     }
@@ -231,9 +227,6 @@ impl Souvenir {
     /// Shift that brings the timestamp to the bottom of the `u64` read at
     /// byte 4.
     const TIMESTAMP_SHIFT: u32 = 64 - Self::RANK_LOW_BITS - TIMESTAMP_BITS;
-
-    /// Longest text accepted before precise checks run (SPEC.md section 6.3 step 2).
-    const PARSE_GUARD_LEN: usize = 64;
 
     #[inline]
     const fn pack(prefix: Prefix, body: u128) -> Self {

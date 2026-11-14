@@ -32,7 +32,7 @@ Each function either returns a value or throws a `SouvenirError`.
 | Function | Returns |
 |---|---|
 | `newId(prefix)` | a new ID |
-| `newMonotonicId(prefix)` | a new ID greater than every earlier result of this function, even within one millisecond |
+| `newMonotonicId(prefix)` | a new ID greater than every earlier one with the same prefix, even within one millisecond |
 | `parse(text)` | `text` as an ID, if valid |
 | `parseExpecting(prefix, text)` | `text` as an ID, if valid and with that prefix |
 | `isValid(value)` | whether `value` is a valid ID string; never throws |
