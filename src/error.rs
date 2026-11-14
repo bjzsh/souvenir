@@ -1,3 +1,4 @@
+use crate::prefix::Prefix;
 use core::fmt;
 
 /// A convenience alias for `Result<T, souvenir::Error>`.
@@ -29,8 +30,13 @@ pub enum Error {
     ZeroPrefix,
     /// The binary prefix field is in the range reserved for future formats.
     ReservedPrefix,
-    /// The ID has a different prefix than the one expected.
-    PrefixMismatch,
+    /// The ID is valid, but has a different prefix than the one expected.
+    PrefixMismatch {
+        /// The prefix that was required.
+        expected: Prefix,
+        /// The prefix the ID has.
+        actual: Prefix,
+    },
     /// A timestamp is 2^48 or more, including a monotonic generator running
     /// past the end of the range.
     TimestampOutOfRange,
@@ -57,7 +63,7 @@ impl Error {
             Self::NonCanonical => "NonCanonical",
             Self::ZeroPrefix => "ZeroPrefix",
             Self::ReservedPrefix => "ReservedPrefix",
-            Self::PrefixMismatch => "PrefixMismatch",
+            Self::PrefixMismatch { .. } => "PrefixMismatch",
             Self::TimestampOutOfRange => "TimestampOutOfRange",
             Self::RandomOutOfRange => "RandomOutOfRange",
             Self::NotUuidV7 => "NotUuidV7",
@@ -66,7 +72,9 @@ impl Error {
         }
     }
 
-    /// A human-readable description of the error.
+    /// A human-readable description of the kind of error. The
+    /// [`Display`](fmt::Display) form adds any detail the error carries, such
+    /// as the two prefixes of a [`PrefixMismatch`](Self::PrefixMismatch).
     #[must_use]
     pub const fn message(&self) -> &'static str {
         match self {
@@ -77,7 +85,7 @@ impl Error {
             Self::NonCanonical => "suffix is not canonical (first character must be 0-3)",
             Self::ZeroPrefix => "prefix field is zero, which is not any prefix",
             Self::ReservedPrefix => "prefix field is in the range reserved for future formats",
-            Self::PrefixMismatch => "ID has a different prefix than expected",
+            Self::PrefixMismatch { .. } => "ID has a different prefix than expected",
             Self::TimestampOutOfRange => "timestamp must fit in 48 bits of Unix milliseconds",
             Self::RandomOutOfRange => "random value must fit in 74 bits",
             Self::NotUuidV7 => "UUID is not version 7 with variant 0b10",
@@ -89,7 +97,13 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.message())
+        f.write_str(self.message())?;
+        match self {
+            Self::PrefixMismatch { expected, actual } => {
+                write!(f, " (expected `{expected}`, found `{actual}`)")
+            }
+            _ => Ok(()),
+        }
     }
 }
 

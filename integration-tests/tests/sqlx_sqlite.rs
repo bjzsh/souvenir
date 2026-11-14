@@ -1,6 +1,7 @@
 use souvenir::{Error, Id, Souvenir};
 use souvenir_integration_tests::{
     Account, Event, Fixture, User, assert_db_order, assert_err, fixtures, one, org_row,
+    wrong_prefix,
 };
 use sqlx::sqlite::SqlitePoolOptions;
 
@@ -74,11 +75,11 @@ async fn sqlx_sqlite() {
     let org = org_row().k;
     assert_err(
         one::<_, Id<User>>(&pool, &format!("SELECT any_text FROM ids WHERE k = {org}")).await,
-        Error::PrefixMismatch,
+        wrong_prefix::<User>(),
     );
     assert_err(
         one::<_, Id<Event>>(&pool, &format!("SELECT any_bytes FROM ids WHERE k = {org}")).await,
-        Error::PrefixMismatch,
+        wrong_prefix::<Event>(),
     );
 
     // The declared form decides how a value is read; nothing is guessed.

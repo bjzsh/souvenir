@@ -152,7 +152,10 @@ impl<T: Tagged> Id<T> {
         if inner.rank() == T::PREFIX.rank() {
             Ok(Self::from_untyped_unchecked(inner))
         } else {
-            Err(Error::PrefixMismatch)
+            Err(Error::PrefixMismatch {
+                expected: T::PREFIX,
+                actual: inner.prefix(),
+            })
         }
     }
 }

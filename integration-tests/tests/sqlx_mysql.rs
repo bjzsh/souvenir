@@ -1,7 +1,7 @@
 use souvenir::{Error, Id, Souvenir};
 use souvenir_integration_tests::{
     Account, Event, Fixture, MYSQL_TEXT, User, assert_db_err, assert_db_order, assert_err,
-    fixtures, one, org_row, url,
+    fixtures, one, org_row, url, wrong_prefix,
 };
 use sqlx::mysql::MySqlPoolOptions;
 
@@ -87,7 +87,7 @@ async fn sqlx_mysql() {
             &format!("SELECT any_text FROM sqlx_ids WHERE k = {org}"),
         )
         .await,
-        Error::PrefixMismatch,
+        wrong_prefix::<User>(),
     );
     assert_err(
         one::<_, Id<Event>>(
@@ -95,7 +95,7 @@ async fn sqlx_mysql() {
             &format!("SELECT any_bytes FROM sqlx_ids WHERE k = {org}"),
         )
         .await,
-        Error::PrefixMismatch,
+        wrong_prefix::<Event>(),
     );
 
     // The CHECK constraint rejects anything that isn't a canonical ID.

@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use souvenir::{Error, Id, Souvenir};
 use souvenir_integration_tests::{
-    Account, Event, User, assert_err, assert_sorted, fixtures, org_row,
+    Account, Event, User, assert_err, assert_sorted, fixtures, org_row, wrong_prefix,
 };
 
 diesel::table! {
@@ -103,11 +103,11 @@ fn diesel_sqlite() {
     let org = ids::table.filter(ids::k.eq(org_row().k));
     assert_err(
         org.select(ids::any_text).first::<Id<User>>(&mut conn),
-        Error::PrefixMismatch,
+        wrong_prefix::<User>(),
     );
     assert_err(
         org.select(ids::any_bytes).first::<Id<Event>>(&mut conn),
-        Error::PrefixMismatch,
+        wrong_prefix::<Event>(),
     );
 
     diesel::sql_query(

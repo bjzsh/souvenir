@@ -41,7 +41,7 @@ fn json_errors() {
         wrong_prefix
             .unwrap_err()
             .to_string()
-            .contains(Error::PrefixMismatch.message())
+            .contains("(expected `org`, found `user`)")
     );
     let bad = serde_json::from_str::<Souvenir>("\"user_123\"");
     assert!(

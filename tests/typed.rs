@@ -30,19 +30,31 @@ fn parse_and_format() {
     assert!(!Id::<User>::is_valid("user_"));
 }
 
+/// The error for a `user` ID where `expected` was required.
+fn mismatch(expected: &str) -> Error {
+    Error::PrefixMismatch {
+        expected: expected.parse().unwrap(),
+        actual: prefix!("user"),
+    }
+}
+
 #[test]
 fn wrong_prefix_is_rejected() {
-    assert_eq!(Id::<Org>::parse(TEXT), Err(Error::PrefixMismatch));
+    assert_eq!(
+        mismatch("org").to_string(),
+        "ID has a different prefix than expected (expected `org`, found `user`)"
+    );
+    assert_eq!(Id::<Org>::parse(TEXT), Err(mismatch("org")));
     assert_eq!(
         Id::<Users>::parse(TEXT),
-        Err(Error::PrefixMismatch),
+        Err(mismatch("users")),
         "users is not user"
     );
     let untyped = Souvenir::parse(TEXT).unwrap();
-    assert_eq!(Id::<Org>::try_from(untyped), Err(Error::PrefixMismatch));
+    assert_eq!(Id::<Org>::try_from(untyped), Err(mismatch("org")));
     assert_eq!(
         Id::<Org>::from_bytes(untyped.to_bytes()),
-        Err(Error::PrefixMismatch)
+        Err(mismatch("org"))
     );
     // Parse errors still come first.
     assert_eq!(Id::<Org>::parse("user"), Err(Error::MissingSeparator));
@@ -133,7 +145,7 @@ fn prefix_values() {
     );
     assert_eq!(
         Souvenir::parse_expecting(prefix!("org"), &untyped.to_string()),
-        Err(Error::PrefixMismatch)
+        Err(mismatch("org"))
     );
 }
 

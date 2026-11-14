@@ -113,7 +113,10 @@ impl Souvenir {
         if id.rank() == prefix.rank() {
             Ok(id)
         } else {
-            Err(Error::PrefixMismatch)
+            Err(Error::PrefixMismatch {
+                expected: prefix,
+                actual: id.prefix(),
+            })
         }
     }
 

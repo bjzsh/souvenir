@@ -32,5 +32,5 @@ pub(crate) fn invalid_type(expected: &str) -> JsValue {
 }
 
 pub(crate) fn convert(err: Error) -> JsValue {
-    souvenir_error(err.code(), err.message())
+    souvenir_error(err.code(), &err.to_string())
 }

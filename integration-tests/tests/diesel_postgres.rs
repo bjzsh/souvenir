@@ -1,8 +1,8 @@
 use diesel::prelude::*;
-use souvenir::{Error, Id, Souvenir};
+use souvenir::{Id, Souvenir};
 use souvenir_integration_tests::{
     Account, Event, PG_DOMAIN, User, assert_db_err, assert_err, assert_sorted, fixtures, org_row,
-    url,
+    url, wrong_prefix,
 };
 
 diesel::table! {
@@ -87,12 +87,12 @@ fn diesel_postgres() {
     assert_err(
         org.select(diesel_ids::any_text)
             .first::<Id<User>>(&mut conn),
-        Error::PrefixMismatch,
+        wrong_prefix::<User>(),
     );
     assert_err(
         org.select(diesel_ids::any_bytes)
             .first::<Id<Event>>(&mut conn),
-        Error::PrefixMismatch,
+        wrong_prefix::<Event>(),
     );
 
     let junk = diesel::sql_query(

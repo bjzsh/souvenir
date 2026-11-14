@@ -1,7 +1,7 @@
 use souvenir::{Error, Id, Souvenir};
 use souvenir_integration_tests::{
     Account, Event, Fixture, PG_DOMAIN, User, assert_db_err, assert_db_order, assert_err, fixtures,
-    one, org_row, url,
+    one, org_row, url, wrong_prefix,
 };
 use sqlx::Row as _;
 use sqlx::postgres::PgPoolOptions;
@@ -122,7 +122,7 @@ async fn sqlx_postgres() {
             &format!("SELECT any_text FROM sqlx_ids WHERE k = {org}"),
         )
         .await,
-        Error::PrefixMismatch,
+        wrong_prefix::<User>(),
     );
     assert_err(
         one::<_, Id<Event>>(
@@ -130,7 +130,7 @@ async fn sqlx_postgres() {
             &format!("SELECT any_bytes FROM sqlx_ids WHERE k = {org}"),
         )
         .await,
-        Error::PrefixMismatch,
+        wrong_prefix::<Event>(),
     );
 
     // The domain rejects anything that isn't a canonical ID.

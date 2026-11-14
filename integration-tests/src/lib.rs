@@ -137,14 +137,22 @@ pub async fn assert_db_order<DB, T>(
     assert_sorted(expected, &got);
 }
 
+/// The error for reading the `org` row's ID as an `Id<T>`.
+pub fn wrong_prefix<T: souvenir::Tagged>() -> souvenir::Error {
+    souvenir::Error::PrefixMismatch {
+        expected: T::PREFIX,
+        actual: souvenir::prefix!("org"),
+    }
+}
+
 /// Check that a result failed with `expected`, a Souvenir error, which
-/// database errors wrap: they contain its message.
+/// database errors wrap: they contain its text.
 #[track_caller]
 pub fn assert_err<T: std::fmt::Debug, E: std::fmt::Display>(
     result: Result<T, E>,
     expected: souvenir::Error,
 ) {
-    assert_db_err(result, expected.message());
+    assert_db_err(result, &expected.to_string());
 }
 
 /// Check that a result failed with an error mentioning `text`, such as a
