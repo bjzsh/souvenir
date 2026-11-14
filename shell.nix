@@ -12,7 +12,6 @@ in
       sqlx-cli
       nodejs_22
       bun
-      binaryen
 
       jq
     ];

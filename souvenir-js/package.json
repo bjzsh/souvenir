@@ -1,0 +1,45 @@
+{
+  "name": "souvenir.js",
+  "version": "0.7.0-alpha.1",
+  "description": "Type-safe, sortable, prefixed IDs like user_00t35pg1sg9ech32tymrkdq6v",
+  "license": "MIT",
+  "author": "Brian Shao",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bjzsh/souvenir.git",
+    "directory": "souvenir-js"
+  },
+  "keywords": ["id", "identifier", "uuid", "prefix", "sortable"],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "test": "bun test tests",
+    "prepack": "bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "typescript": "5.9.3"
+  },
+  "packageManager": "bun@1.4.4"
+}

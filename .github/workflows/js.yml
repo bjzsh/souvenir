@@ -1,0 +1,40 @@
+name: JavaScript
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: souvenir-js
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Build package
+        run: bun run build
+      - name: Check types
+        run: bun run typecheck
+      - name: Test
+        run: bun run test
+      - name: Load the built package in Node.js
+        run: |
+          node -e "const s = require('souvenir.js'); console.log(s.parse(s.newId('user')))"
+          node --input-type=module -e "import { newId, parse } from 'souvenir.js'; console.log(parse(newId('user')))"
+      - name: Pack package
+        run: bun pm pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: souvenir-js
+          path: souvenir-js/*.tgz

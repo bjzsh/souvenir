@@ -162,8 +162,9 @@ assert_eq!(id.to_string(), "user_00t35pg1sg000000000000000");
 
 ## JavaScript and TypeScript
 
-`souvenir.js` is the same Rust implementation compiled to WebAssembly. IDs
-are plain strings at run time and branded types in TypeScript:
+`souvenir.js` implements the same format in plain TypeScript, with no
+dependencies, and passes the same conformance vectors. IDs are plain strings
+at run time and branded types in TypeScript:
 
 ```ts
 import { typed, type SouvenirId } from 'souvenir.js';
@@ -176,7 +177,7 @@ UserId.parse(input); // throws SouvenirError with code 'PrefixMismatch' for othe
 UserId.is(value);    // type guard
 ```
 
-See [`souvenir-wasm/README.md`](https://github.com/bjzsh/souvenir/blob/main/souvenir-wasm/README.md).
+See [`souvenir-js/README.md`](https://github.com/bjzsh/souvenir/blob/main/souvenir-js/README.md).
 
 ## Format
 
@@ -264,10 +265,27 @@ tagged!(pub Event = "event", storage = Bytes); // 20 bytes
 - **sqlx:** the declared form is used for both writing and reading; nothing
   is guessed from a value.
 - **diesel:** declare the column's SQL type to match (`Text`, `Binary`, or
-  `Uuid` on Postgres). A mismatch is a compile error when the code is built.
+  `Uuid` on Postgres). A mismatch is a compile error when the code is built
+  (`cargo build` or `cargo test`; `cargo check` does not report it).
 - **Untyped `Souvenir`** is stored as text. For bytes, bind
   `&id.as_bytes()[..]` and read with `Souvenir::from_slice` (diesel also maps
   `Souvenir` to `Binary` columns directly).
+
+diesel has an `Identifiable` of its own, and `use souvenir::Identifiable`
+takes the name over diesel's prelude. To derive both on one struct, name
+diesel's by its path:
+
+```rust,ignore
+use diesel::prelude::*;
+use souvenir::{Id, Identifiable, Tagged};
+
+#[derive(Queryable, Tagged, Identifiable, diesel::associations::Identifiable)]
+#[souvenir(prefix = "user")]
+#[diesel(table_name = users)]
+struct User {
+    id: Id<User>,
+}
+```
 
 In JSON and HTTP, use the string; "no ID" is `null` or an absent field. In
 URLs, use the string as-is: every character is URL-safe.

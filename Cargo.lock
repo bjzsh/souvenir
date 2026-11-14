@@ -657,11 +657,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
 dependencies = [
  "cfg-if",
- "js-sys",
  "libc",
  "r-efi",
  "wasip2",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -1649,15 +1647,6 @@ dependencies = [
  "quote",
  "souvenir",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "souvenir-wasm"
-version = "0.7.0-alpha.1"
-dependencies = [
- "getrandom 0.3.4",
- "souvenir",
- "wasm-bindgen",
 ]
 
 [[package]]
