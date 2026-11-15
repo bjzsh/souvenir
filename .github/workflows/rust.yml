@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -17,48 +24,67 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: stable, os: ubuntu-latest, rust: stable, args: --all-features }
-          - { name: beta, os: ubuntu-latest, rust: beta, args: --all-features }
-          - { name: nightly, os: ubuntu-latest, rust: nightly, args: --all-features }
-          - { name: macos, os: macos-latest, rust: stable, args: --all-features }
-          - { name: win64, os: windows-latest, rust: stable-x86_64-pc-windows-msvc, args: --all-features }
-          - { name: mingw, os: windows-latest, rust: stable-x86_64-pc-windows-gnu, args: --all-features }
-          - { name: msrv, os: ubuntu-latest, rust: "1.87.0", args: "" }
+          - { name: stable, os: ubuntu-latest, rust: stable }
+          - { name: beta, os: ubuntu-latest, rust: beta }
+          - { name: nightly, os: ubuntu-latest, rust: nightly }
+          - { name: macos, os: macos-latest, rust: stable }
+          - { name: win64, os: windows-latest, rust: stable-x86_64-pc-windows-msvc }
+          - { name: mingw, os: windows-latest, rust: stable-x86_64-pc-windows-gnu }
+          # The oldest supported Rust, with the dependency versions in Cargo.lock.
+          - { name: msrv, os: ubuntu-latest, rust: "1.87.0" }
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         with:
           toolchain: ${{ matrix.rust }}
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          key: ${{ matrix.name }}
       - name: Run tests
-        run: cargo test --workspace --exclude souvenir-integration-tests --verbose ${{ matrix.args }}
+        run: cargo test --locked --workspace --exclude souvenir-integration-tests --all-features
 
   lint:
     name: Lint, docs and packaging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         with:
+          toolchain: stable
           components: rustfmt, clippy
           targets: wasm32-unknown-unknown, thumbv7em-none-eabihf
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      # `--all-features` turns on the integration tests' diesel + MySQL test.
+      - name: Install the MySQL client library
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmysqlclient-dev
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
       - name: Docs
-        run: cargo doc --workspace --all-features --no-deps
+        run: cargo doc --locked --workspace --all-features --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
       - name: Tests without default features
-        run: cargo test -p souvenir --no-default-features
+        run: cargo test --locked -p souvenir --no-default-features
       - name: Tests with std but without getrandom
-        run: cargo test -p souvenir --no-default-features --features std
+        run: cargo test --locked -p souvenir --no-default-features --features std
       - name: Builds without the standard library
-        run: cargo check -p souvenir --no-default-features --features macros,serde,uuid,alloc --target thumbv7em-none-eabihf
+        run: cargo check --locked -p souvenir --no-default-features --features macros,serde,uuid,alloc --target thumbv7em-none-eabihf
       - name: Builds for WebAssembly without getrandom
-        run: cargo check -p souvenir --no-default-features --features macros,serde --target wasm32-unknown-unknown
+        run: cargo check --locked -p souvenir --no-default-features --features macros,serde --target wasm32-unknown-unknown
       - name: Package crates
-        run: cargo package --workspace --exclude souvenir-integration-tests
+        run: cargo package --locked --workspace --exclude souvenir-integration-tests
+
+  deny:
+    name: Advisories, licenses and sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
+        with:
+          command: check
+          arguments: --all-features
 
   db:
     name: Database integration
@@ -84,7 +110,12 @@ jobs:
       SOUVENIR_TEST_PG_URL: postgres://postgres:postgres@localhost:5432/souvenir_test
       SOUVENIR_TEST_MYSQL_URL: mysql://root:root@127.0.0.1:3306/souvenir_test
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: Install the MySQL client library
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmysqlclient-dev
       - name: Run integration tests
-        run: cargo test -p souvenir-integration-tests --verbose
+        run: cargo test --locked -p souvenir-integration-tests --features diesel-mysql

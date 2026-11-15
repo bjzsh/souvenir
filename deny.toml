@@ -1,0 +1,38 @@
+# Checked in CI by cargo-deny: known vulnerabilities, licenses and sources
+# of every dependency, including the database integrations and dev tools.
+
+[graph]
+all-features = true
+
+[advisories]
+# Both come from sqlx 0.8, and are fixed only by moving to sqlx 0.9. They
+# are in this repository's lockfile, used for tests; a program that depends
+# on souvenir resolves its own versions.
+ignore = [
+    { id = "RUSTSEC-2023-0071", reason = "rsa, through sqlx-mysql 0.8: no fixed version sqlx 0.8 accepts" },
+    { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys 0.30, pinned by sqlx-sqlite 0.8" },
+]
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+confidence-threshold = 0.9
+
+[bans]
+# The database crates bring several versions of some small crates.
+multiple-versions = "allow"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

@@ -146,9 +146,9 @@ pub fn wrong_prefix<T: souvenir::Tagged>() -> souvenir::Error {
 }
 
 /// Check that a result failed with `expected`, a Souvenir error, which
-/// database errors wrap: they contain its text.
+/// database errors wrap: its text is in the error or one of its causes.
 #[track_caller]
-pub fn assert_err<T: std::fmt::Debug, E: std::fmt::Display>(
+pub fn assert_err<T: std::fmt::Debug, E: std::error::Error>(
     result: Result<T, E>,
     expected: souvenir::Error,
 ) {
@@ -156,14 +156,24 @@ pub fn assert_err<T: std::fmt::Debug, E: std::fmt::Display>(
 }
 
 /// Check that a result failed with an error mentioning `text`, such as a
-/// database's own constraint error.
+/// database's own constraint error. The error's causes count too: diesel
+/// reports a failed decode as the column's name, caused by the real error.
 #[track_caller]
-pub fn assert_db_err<T: std::fmt::Debug, E: std::fmt::Display>(result: Result<T, E>, text: &str) {
-    match result {
+pub fn assert_db_err<T: std::fmt::Debug, E: std::error::Error>(result: Result<T, E>, text: &str) {
+    let error = match result {
         Ok(v) => panic!("expected an error mentioning {text:?}, got Ok({v:?})"),
-        Err(e) => assert!(e.to_string().contains(text), "expected {text:?}, got: {e}"),
+        Err(e) => e,
+    };
+    let mut chain = error.to_string();
+    let mut cause = error.source();
+    while let Some(e) = cause {
+        chain.push_str(": ");
+        chain.push_str(&e.to_string());
+        cause = e.source();
     }
+    assert!(chain.contains(text), "expected {text:?}, got: {chain}");
 }
+
 /// The recommended Postgres domain for text IDs (see the README).
 pub const PG_DOMAIN: &str = r#"
 DO $$ BEGIN

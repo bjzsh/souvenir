@@ -7,6 +7,11 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[features]
+# The diesel + MySQL test links the MySQL client library (libmysqlclient),
+# so it is opt-in.
+diesel-mysql = ["diesel/mysql"]
+
 [dependencies]
 souvenir = { workspace = true, features = ["diesel", "sqlx", "uuid", "postgres", "mysql", "sqlite"] }
 sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio", "macros", "sqlite", "postgres", "mysql"] }
