@@ -144,9 +144,9 @@ pub async fn assert_db_order<DB, T>(
 }
 
 /// Check that a result failed with `expected`, a Souvenir error, which
-/// database errors wrap: they contain its message.
+/// database errors wrap: its message is in theirs or in one of their sources.
 #[track_caller]
-pub fn assert_err<T: std::fmt::Debug, E: std::fmt::Display>(
+pub fn assert_err<T: std::fmt::Debug, E: std::error::Error>(
     result: Result<T, E>,
     expected: souvenir::Error,
 ) {
@@ -156,10 +156,23 @@ pub fn assert_err<T: std::fmt::Debug, E: std::fmt::Display>(
 /// Check that a result failed with an error mentioning `text`, such as a
 /// database's own constraint error.
 #[track_caller]
-pub fn assert_db_err<T: std::fmt::Debug, E: std::fmt::Display>(result: Result<T, E>, text: &str) {
+pub fn assert_db_err<T: std::fmt::Debug, E: std::error::Error>(result: Result<T, E>, text: &str) {
     match result {
         Ok(v) => panic!("expected an error mentioning {text:?}, got Ok({v:?})"),
-        Err(e) => assert!(e.to_string().contains(text), "expected {text:?}, got: {e}"),
+        Err(e) => {
+            // Some drivers report the cause only through `source`.
+            let mut messages = vec![e.to_string()];
+            let mut source = e.source();
+            while let Some(cause) = source {
+                messages.push(cause.to_string());
+                source = cause.source();
+            }
+            assert!(
+                messages.iter().any(|m| m.contains(text)),
+                "expected {text:?}, got: {}",
+                messages.join(": ")
+            );
+        }
     }
 }
 /// The recommended Postgres domain for text IDs (see the README).
