@@ -1,6 +1,6 @@
 {
   "name": "souvenir.js",
-  "version": "0.7.0-alpha.1",
+  "version": "0.7.0",
   "description": "Type-safe, sortable, prefixed IDs like user_00t35pg1sg9ech32tymrkdq6v",
   "license": "MIT",
   "author": "Brian Shao",

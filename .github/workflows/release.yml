@@ -43,7 +43,7 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          # A pre-release (0.7.0-alpha.1) must not become npm's `latest`.
+          # A pre-release (such as 0.8.0-alpha.1) must not become npm's `latest`.
           case "$version" in
             *-*) echo "npm_tag=next" >> "$GITHUB_OUTPUT" ;;
             *) echo "npm_tag=latest" >> "$GITHUB_OUTPUT" ;;

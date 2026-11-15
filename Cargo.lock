@@ -1518,7 +1518,7 @@ dependencies = [
 
 [[package]]
 name = "souvenir"
-version = "0.7.0-alpha.1"
+version = "0.7.0"
 dependencies = [
  "criterion",
  "diesel",
@@ -1535,7 +1535,7 @@ dependencies = [
 
 [[package]]
 name = "souvenir-integration-tests"
-version = "0.7.0-alpha.1"
+version = "0.7.0"
 dependencies = [
  "diesel",
  "libsqlite3-sys",
@@ -1547,7 +1547,7 @@ dependencies = [
 
 [[package]]
 name = "souvenir-macros"
-version = "0.7.0-alpha.1"
+version = "0.7.0"
 dependencies = [
  "proc-macro2",
  "quote",

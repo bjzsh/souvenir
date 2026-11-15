@@ -16,7 +16,7 @@ stored as bytes never loses its type.
 
 ```toml
 [dependencies]
-souvenir = "0.7.0-alpha.1"
+souvenir = "0.7.0"
 ```
 
 ### Typed IDs

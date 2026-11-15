@@ -358,7 +358,7 @@ export interface GeneratorOptions {
 }
 
 /** A function that generates an ID with the given prefix. */
-export type Generator = <const P extends string>(prefix: P) => SouvenirId<P>;
+export type IdGenerator = <const P extends string>(prefix: P) => SouvenirId<P>;
 
 // The Web Crypto global, declared here so the package needs no DOM or Node
 // type definitions.
@@ -397,7 +397,7 @@ const randomStep = (random: RandomSource) => 1n + draw(random, 4);
  * A generator that makes each ID independently. IDs with the same prefix
  * created in the same millisecond are in random order.
  */
-export function randomGenerator(options: GeneratorOptions = {}): Generator {
+export function randomGenerator(options: GeneratorOptions = {}): IdGenerator {
   const { now = systemClock, random = systemRandom } = options;
   return <const P extends string>(prefix: P) => {
     checkPrefix(prefix);
@@ -413,7 +413,7 @@ export function randomGenerator(options: GeneratorOptions = {}): Generator {
  * One generator serves every prefix. IDs with different prefixes still sort
  * by prefix first.
  */
-export function monotonicGenerator(options: GeneratorOptions = {}): Generator {
+export function monotonicGenerator(options: GeneratorOptions = {}): IdGenerator {
   const { now = systemClock, random = systemRandom } = options;
   let last: { timestampMs: number; random: bigint } | undefined;
   return <const P extends string>(prefix: P) => {
@@ -440,14 +440,14 @@ export function monotonicGenerator(options: GeneratorOptions = {}): Generator {
 }
 
 /** Generate a new ID with the given prefix. */
-export const newId: Generator = randomGenerator();
+export const newId: IdGenerator = randomGenerator();
 
 /**
  * Generate a new ID from the module-wide monotonic generator. Each result is
  * greater than every earlier one with the same prefix, even within the same
  * millisecond.
  */
-export const newMonotonicId: Generator = monotonicGenerator();
+export const newMonotonicId: IdGenerator = monotonicGenerator();
 
 // Typed
 

@@ -68,6 +68,8 @@ generate('user'); // 'user_00t35pg1sg000000000000000'
 const next = monotonicGenerator(); // its own state, the system's sources
 ```
 
+Both return an `IdGenerator`: a function from a prefix to a new ID.
+
 `now` returns Unix milliseconds. `random` fills the bytes it is given, like
 `crypto.getRandomValues`, and outside tests must be cryptographically
 secure. Each `monotonicGenerator()` keeps its own state; `newMonotonicId`
@@ -102,7 +104,9 @@ the type of `code`. Compare codes, not messages, whose wording may change.
   that means HTTPS or localhost.
 
 The package ships both ES modules and CommonJS. If a program loads both
-builds, each has its own `newMonotonicId` state.
+builds, each has its own `newMonotonicId` state and its own `SouvenirError`
+class, so `instanceof` is false for an error thrown by the other build.
+`error.code` works either way.
 
 ## Development
 
