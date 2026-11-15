@@ -17,14 +17,14 @@ async fn sqlx_mysql() {
         .connect(&url)
         .await
         .unwrap();
-    sqlx::query(&format!(
+    sqlx::query(sqlx::AssertSqlSafe(format!(
         "CREATE TEMPORARY TABLE sqlx_ids (k INT PRIMARY KEY,
          any_text {MYSQL_TEXT} NOT NULL
              CHECK (REGEXP_LIKE(any_text, '^[a-z]{{1,8}}_[0-3][0-9a-hjkmnp-tv-z]{{24}}$', 'c')),
          user_text {MYSQL_TEXT} NOT NULL,
          event_bytes BINARY(20) NOT NULL, account_uuid BINARY(16) NOT NULL,
          any_bytes BINARY(20) NOT NULL)"
-    ))
+    )))
     .execute(&pool)
     .await
     .unwrap();

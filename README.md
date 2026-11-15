@@ -153,7 +153,7 @@ assert_eq!(id.to_string(), "user_00t35pg1sg000000000000000");
 | `getrandom` | yes  | generating IDs from the OS random source (`Souvenir::new`, `Id::new`, `RandomGenerator::new`, `MonotonicGenerator::new`). Turn it off for parse-only builds, such as WebAssembly without a `getrandom` backend; generators can still take any random source. |
 | `macros` | yes     | `#[derive(Tagged)]`, `#[derive(Identifiable)]`, `id!` |
 | `serde`  | yes     | text form in human-readable formats, 20 bytes otherwise |
-| `sqlx`   |         | with `postgres`, `mysql`, `sqlite`; see [Storage](#storage) |
+| `sqlx`   |         | sqlx 0.9, with `postgres`, `mysql`, `sqlite`; see [Storage](#storage). sqlx 0.9 needs Rust 1.94, newer than this crate's own minimum of 1.87. |
 | `diesel` |         | with `postgres`, `mysql`, `sqlite`; see [Storage](#storage) |
 | `uuid`   |         | `to_uuid`/`from_uuid` with `uuid::Uuid` (UUIDv7), and conversions between `Id<T>` and `Uuid`; turned on by `sqlx` and `diesel` |
 
