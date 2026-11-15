@@ -1,8 +1,7 @@
 use crate::integration::stored::{StoredBinary, decode_stored_binary};
 use crate::{Id, Souvenir, Storage, Tagged};
-use sqlx::sqlite::{Sqlite, SqliteArgumentValue, SqliteTypeInfo, SqliteValueRef};
+use sqlx::sqlite::{Sqlite, SqliteArgumentsBuffer, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Decode, Encode, Type, encode::IsNull, error::BoxDynError};
-use std::borrow::Cow;
 
 impl Type<Sqlite> for Souvenir {
     fn type_info() -> SqliteTypeInfo {
@@ -14,13 +13,12 @@ impl Type<Sqlite> for Souvenir {
     }
 }
 
-impl<'q> Encode<'q, Sqlite> for Souvenir {
-    fn encode_by_ref(
-        &self,
-        args: &mut Vec<SqliteArgumentValue<'q>>,
-    ) -> Result<IsNull, BoxDynError> {
-        args.push(SqliteArgumentValue::Text(Cow::Owned(self.to_string())));
-        Ok(IsNull::No)
+// The buffer can't be pushed to from outside sqlx, so encoding goes through
+// sqlx's own `String` and `&[u8]` impls.
+
+impl Encode<'_, Sqlite> for Souvenir {
+    fn encode_by_ref(&self, args: &mut SqliteArgumentsBuffer) -> Result<IsNull, BoxDynError> {
+        <String as Encode<'_, Sqlite>>::encode(self.to_string(), args)
     }
 }
 
@@ -46,18 +44,14 @@ impl<T: Tagged> Type<Sqlite> for Id<T> {
     }
 }
 
-impl<'q, T: Tagged> Encode<'q, Sqlite> for Id<T> {
-    fn encode_by_ref(
-        &self,
-        args: &mut Vec<SqliteArgumentValue<'q>>,
-    ) -> Result<IsNull, BoxDynError> {
-        args.push(match T::STORAGE {
-            Storage::Text => SqliteArgumentValue::Text(Cow::Owned(self.to_string())),
+impl<T: Tagged> Encode<'_, Sqlite> for Id<T> {
+    fn encode_by_ref(&self, args: &mut SqliteArgumentsBuffer) -> Result<IsNull, BoxDynError> {
+        match T::STORAGE {
+            Storage::Text => <String as Encode<'_, Sqlite>>::encode(self.to_string(), args),
             Storage::Bytes | Storage::Uuid => {
-                SqliteArgumentValue::Blob(Cow::Owned(StoredBinary::of(self).as_slice().to_vec()))
+                <&[u8] as Encode<'_, Sqlite>>::encode(StoredBinary::of(self).as_slice(), args)
             }
-        });
-        Ok(IsNull::No)
+        }
     }
 }
 

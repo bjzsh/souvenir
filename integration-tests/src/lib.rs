@@ -111,11 +111,14 @@ pub async fn one<DB, T>(pool: &sqlx::Pool<DB>, sql: &str) -> Result<T, sqlx::Err
 where
     DB: sqlx::Database,
     for<'c> &'c mut DB::Connection: sqlx::Executor<'c, Database = DB>,
-    for<'q> DB::Arguments<'q>: sqlx::IntoArguments<'q, DB>,
+    DB::Arguments: sqlx::IntoArguments<DB>,
     (T,): for<'r> sqlx::FromRow<'r, DB::Row>,
     T: Send + Unpin,
 {
-    sqlx::query_scalar(sql).fetch_one(pool).await
+    // Test SQL is assembled from constants in the tests themselves.
+    sqlx::query_scalar(sqlx::AssertSqlSafe(sql))
+        .fetch_one(pool)
+        .await
 }
 
 /// Check that `SELECT column FROM table ORDER BY column` returns `expected`
@@ -128,12 +131,15 @@ pub async fn assert_db_order<DB, T>(
 ) where
     DB: sqlx::Database,
     for<'c> &'c mut DB::Connection: sqlx::Executor<'c, Database = DB>,
-    for<'q> DB::Arguments<'q>: sqlx::IntoArguments<'q, DB>,
+    DB::Arguments: sqlx::IntoArguments<DB>,
     (T,): for<'r> sqlx::FromRow<'r, DB::Row>,
     T: Ord + Clone + std::fmt::Debug + Send + Unpin,
 {
     let sql = format!("SELECT {column} FROM {table} ORDER BY {column}");
-    let got: Vec<T> = sqlx::query_scalar(&sql).fetch_all(pool).await.unwrap();
+    let got: Vec<T> = sqlx::query_scalar(sqlx::AssertSqlSafe(sql))
+        .fetch_all(pool)
+        .await
+        .unwrap();
     assert_sorted(expected, &got);
 }
 

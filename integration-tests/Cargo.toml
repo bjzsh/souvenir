@@ -14,10 +14,10 @@ diesel-mysql = ["diesel/mysql"]
 
 [dependencies]
 souvenir = { workspace = true, features = ["diesel", "sqlx", "uuid", "postgres", "mysql", "sqlite"] }
-sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio", "macros", "sqlite", "postgres", "mysql"] }
+sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "tls-rustls-ring-webpki", "macros", "sqlite", "postgres", "mysql"] }
 
 [dev-dependencies]
 diesel = { version = "2.2.12", default-features = false, features = ["sqlite", "postgres"] }
-libsqlite3-sys = { version = "0.30", features = ["bundled"] }
+libsqlite3-sys = { version = "0.36", features = ["bundled"] }
 pq-sys = { version = "0.7", features = ["bundled"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

@@ -5,21 +5,18 @@
 all-features = true
 
 [advisories]
-# Both come from sqlx 0.8, and are fixed only by moving to sqlx 0.9. They
-# are in this repository's lockfile, used for tests; a program that depends
-# on souvenir resolves its own versions.
+# A CVE in the C SQLite that libsqlite3-sys bundles, fixed in 0.39;
+# sqlx-sqlite 0.9 accepts only versions below 0.38. It is in this
+# repository's lockfile, used for tests; a program that depends on souvenir
+# resolves its own versions.
 ignore = [
-    { id = "RUSTSEC-2023-0071", reason = "rsa, through sqlx-mysql 0.8: no fixed version sqlx 0.8 accepts" },
-    { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys 0.30, pinned by sqlx-sqlite 0.8" },
+    { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys 0.36, the newest sqlx-sqlite 0.9 and diesel 2.3 both accept" },
 ]
 
 [licenses]
 allow = [
     "MIT",
     "Apache-2.0",
-    "Apache-2.0 WITH LLVM-exception",
-    "BSD-2-Clause",
-    "BSD-3-Clause",
     "BSL-1.0",
     "Unicode-3.0",
     "Unlicense",
