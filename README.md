@@ -210,11 +210,11 @@ IDs the same way Rust does, and a check that rejects anything that isn't an
 ID:
 
 ```sql
--- Postgres: create once, then use `souvenir` as the column type
-CREATE DOMAIN souvenir AS text COLLATE "C"
+-- Postgres: create once, then use `souvenir_text` as the column type
+CREATE DOMAIN souvenir_text AS text COLLATE "C"
   CHECK (VALUE ~ '^[a-z]{1,8}_[0-3][0-9a-hjkmnp-tv-z]{24}$');
 
-CREATE TABLE users (id souvenir PRIMARY KEY, ...);
+CREATE TABLE users (id souvenir_text PRIMARY KEY, ...);
 ```
 
 ```sql
@@ -250,24 +250,52 @@ struct Account {
 }
 
 tagged!(pub Event = "event", storage = Bytes); // 20 bytes
+tagged!(pub Order = "order", storage = Native); // the extension's type
 ```
 
 | Storage | Postgres | MySQL | SQLite | Use for |
 |---|---|---|---|---|
-| `Text` (default) | `text` / `souvenir` | `VARCHAR(34)` | `TEXT` | almost everything |
+| `Text` (default) | `text` / `souvenir_text` | `VARCHAR(34)` | `TEXT` | almost everything |
 | `Bytes` | `bytea` | `BINARY(20)` | `BLOB` (20 B) | very large tables, where the smaller index matters. Still self-describing. |
 | `Uuid` | `uuid` | `BINARY(16)` | `BLOB` (16 B) | columns that must be native UUIDs. The prefix is not stored: only the Rust type supplies it, and nothing detects a column read through the wrong `Id<T>`. |
+| `Native` | `souvenir` ([extension](#postgres-extension)) | `BINARY(20)` | `BLOB` (20 B) | Postgres servers you control. As small as `Bytes`, as readable as `Text`. |
 
 - **sqlx:** the declared form is used for both writing and reading; nothing
   is guessed from a value.
-- **diesel:** declare the column's SQL type to match (`Text`, `Binary`, or
-  `Uuid` on Postgres). A mismatch is a compile error when the code is built.
-- **Untyped `Souvenir`** is stored as text. For bytes, bind
+- **diesel:** declare the column's SQL type to match (`Text`, `Binary`,
+  `Uuid` on Postgres, or `souvenir::sql_types::Souvenir` for `Native`). A
+  mismatch is a compile error when the code is built.
+- **Untyped `Souvenir`** is stored as text (and reads the extension's type
+  too). For bytes, bind
   `&id.as_bytes()[..]` and read with `Souvenir::from_slice` (diesel also maps
   `Souvenir` to `Binary` columns directly).
 
 In JSON and HTTP, use the string; "no ID" is `null` or an absent field. In
 URLs, use the string as-is: every character is URL-safe.
+
+### Postgres extension
+
+[`souvenir-postgres`](https://github.com/bjzsh/souvenir/tree/main/souvenir-postgres)
+adds a native `souvenir` type to Postgres 14-18. It stores the 20-byte
+binary form, prints and parses as the ID string, sorts in ID order, and
+rejects anything that isn't an ID. It also generates IDs in SQL:
+
+```sql
+CREATE EXTENSION souvenir;
+
+CREATE TABLE orders (
+  id souvenir PRIMARY KEY DEFAULT gen_souvenir('order'),
+  user_id souvenir NOT NULL CHECK (souvenir_has_prefix(user_id, 'user'))
+);
+
+SELECT * FROM orders WHERE id >= souvenir_min('order', now() - interval '1 day');
+```
+
+The easiest way to run it is the prebuilt image, the official Postgres image
+with the extension installed: `ghcr.io/bjzsh/souvenir-postgres:18` (also
+`14`-`17`). Use `storage = Native` for IDs kept in these columns. Hosted
+Postgres services (RDS, Cloud SQL, Supabase, Neon and others) only allow their
+own extensions, so use `Text` or `Bytes` there.
 
 ## Things to know
 

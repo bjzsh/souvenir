@@ -40,7 +40,7 @@ pub trait Tagged {
 /// Declare one or more [`Tagged`] marker types.
 ///
 /// Each is a unit struct. An invalid prefix fails to build. An optional
-/// `storage = Text | Bytes | Uuid` sets [`Tagged::STORAGE`] (default
+/// `storage = Text | Bytes | Uuid | Native` sets [`Tagged::STORAGE`] (default
 /// `Text`).
 ///
 /// ```

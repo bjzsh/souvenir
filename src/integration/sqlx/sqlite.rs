@@ -34,14 +34,18 @@ impl<T: Tagged> Type<Sqlite> for Id<T> {
     fn type_info() -> SqliteTypeInfo {
         match T::STORAGE {
             Storage::Text => <&str as Type<Sqlite>>::type_info(),
-            Storage::Bytes | Storage::Uuid => <&[u8] as Type<Sqlite>>::type_info(),
+            Storage::Bytes | Storage::Native | Storage::Uuid => {
+                <&[u8] as Type<Sqlite>>::type_info()
+            }
         }
     }
 
     fn compatible(ty: &SqliteTypeInfo) -> bool {
         match T::STORAGE {
             Storage::Text => <&str as Type<Sqlite>>::compatible(ty),
-            Storage::Bytes | Storage::Uuid => <&[u8] as Type<Sqlite>>::compatible(ty),
+            Storage::Bytes | Storage::Native | Storage::Uuid => {
+                <&[u8] as Type<Sqlite>>::compatible(ty)
+            }
         }
     }
 }
@@ -53,7 +57,7 @@ impl<'q, T: Tagged> Encode<'q, Sqlite> for Id<T> {
     ) -> Result<IsNull, BoxDynError> {
         args.push(match T::STORAGE {
             Storage::Text => SqliteArgumentValue::Text(Cow::Owned(self.to_string())),
-            Storage::Bytes | Storage::Uuid => {
+            Storage::Bytes | Storage::Native | Storage::Uuid => {
                 SqliteArgumentValue::Blob(Cow::Owned(StoredBinary::of(self).as_slice().to_vec()))
             }
         });
@@ -65,7 +69,7 @@ impl<T: Tagged> Decode<'_, Sqlite> for Id<T> {
     fn decode(value: SqliteValueRef<'_>) -> Result<Self, BoxDynError> {
         Ok(match T::STORAGE {
             Storage::Text => Self::parse(<&str as Decode<Sqlite>>::decode(value)?)?,
-            Storage::Bytes | Storage::Uuid => {
+            Storage::Bytes | Storage::Native | Storage::Uuid => {
                 decode_stored_binary(<&[u8] as Decode<Sqlite>>::decode(value)?)?
             }
         })

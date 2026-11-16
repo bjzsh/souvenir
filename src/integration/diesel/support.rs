@@ -53,8 +53,8 @@ macro_rules! backend_to_sql {
             ) -> ::diesel::serialize::Result {
                 require_storage!(
                     T,
-                    $crate::Storage::Bytes | $crate::Storage::Uuid,
-                    "a Binary column needs a Tagged type with Storage::Bytes or Storage::Uuid"
+                    $crate::Storage::Bytes | $crate::Storage::Native | $crate::Storage::Uuid,
+                    "a Binary column needs a Tagged type with Storage::Bytes, Native or Uuid"
                 );
                 let stored = $crate::integration::stored::StoredBinary::of(self);
                 let $value = $crate::integration::diesel::support::Value::Binary(stored.as_slice());

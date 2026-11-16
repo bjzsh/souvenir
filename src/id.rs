@@ -38,7 +38,8 @@ use std::time::SystemTime;
 )]
 #[cfg_attr(
     all(feature = "diesel", feature = "postgres"),
-    diesel(sql_type = ::diesel::sql_types::Uuid)
+    diesel(sql_type = ::diesel::sql_types::Uuid),
+    diesel(sql_type = crate::sql_types::Souvenir)
 )]
 pub struct Id<T: Tagged> {
     inner: Souvenir,

@@ -1,8 +1,8 @@
 use crate::{Error, Id, Result, Storage, Tagged};
 use uuid::Uuid;
 
-/// An ID's binary database form: the 20 bytes for `Storage::Bytes`, a
-/// UUIDv7 for `Storage::Uuid`.
+/// An ID's binary database form: the 20 bytes for `Storage::Bytes` and
+/// `Storage::Native`, a UUIDv7 for `Storage::Uuid`.
 #[cfg(any(feature = "postgres", feature = "mysql", feature = "sqlite"))]
 pub(crate) enum StoredBinary {
     Bytes([u8; crate::spec::BYTE_LEN]),

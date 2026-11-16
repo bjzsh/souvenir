@@ -70,8 +70,8 @@ pub fn id(input: TokenStream) -> TokenStream {
 /// Implement `Tagged`, so `Id<Self>` is the ID type of this kind of record.
 ///
 /// Usually derived on the record type itself. `storage = Text | Bytes |
-/// Uuid` sets how IDs of this kind are stored in a database (default
-/// `Text`).
+/// Uuid | Native` sets how IDs of this kind are stored in a database
+/// (default `Text`).
 ///
 /// ```
 /// use souvenir::{Id, Identifiable, Storage, Tagged};

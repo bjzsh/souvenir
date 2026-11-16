@@ -38,6 +38,10 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
     diesel(sql_type = ::diesel::sql_types::Text),
     diesel(sql_type = ::diesel::sql_types::Binary)
 )]
+#[cfg_attr(
+    all(feature = "diesel", feature = "postgres"),
+    diesel(sql_type = crate::sql_types::Souvenir)
+)]
 pub struct Souvenir([u8; BYTE_LEN]);
 
 impl Souvenir {

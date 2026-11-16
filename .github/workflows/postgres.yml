@@ -1,0 +1,137 @@
+name: Postgres extension
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  PGRX_VERSION: 0.19.4
+
+jobs:
+  test:
+    name: Test (PG ${{ matrix.pg }})
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        pg: [14, 15, 16, 17, 18]
+        include:
+          - { pg: 19, experimental: true }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Install Postgres ${{ matrix.pg }} from PGDG
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-common libclang-dev
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y "postgresql-${{ matrix.pg }}" "postgresql-server-dev-${{ matrix.pg }}"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/cargo-pgrx
+            ~/.cargo/registry
+            souvenir-postgres/target
+          key: pgrx-${{ env.PGRX_VERSION }}-pg${{ matrix.pg }}-${{ hashFiles('souvenir-postgres/Cargo.lock') }}
+          restore-keys: pgrx-${{ env.PGRX_VERSION }}-pg${{ matrix.pg }}-
+      - name: Install cargo-pgrx
+        run: |
+          cargo pgrx --version 2>/dev/null | grep -q "$PGRX_VERSION" \
+            || cargo install cargo-pgrx --version "$PGRX_VERSION" --locked --force
+          cargo pgrx init "--pg${{ matrix.pg }}=/usr/lib/postgresql/${{ matrix.pg }}/bin/pg_config"
+      - name: Format
+        working-directory: souvenir-postgres
+        run: cargo fmt --check
+      - name: Clippy
+        working-directory: souvenir-postgres
+        run: cargo clippy --all-targets --no-default-features --features "pg${{ matrix.pg }} pg_test" -- -D warnings
+      - name: Test
+        working-directory: souvenir-postgres
+        run: cargo pgrx test "pg${{ matrix.pg }}"
+
+  image:
+    name: Image (PG ${{ matrix.pg }}, ${{ matrix.arch }})
+    needs: test
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        pg: [14, 15, 16, 17, 18]
+        arch: [amd64, arm64]
+        include:
+          - { arch: amd64, runner: ubuntu-latest }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: souvenir-postgres/Dockerfile
+          build-args: PG_MAJOR=${{ matrix.pg }}
+          load: true
+          tags: souvenir-postgres:test
+          cache-from: type=gha,scope=pg${{ matrix.pg }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=pg${{ matrix.pg }}-${{ matrix.arch }}
+      - name: Start the image
+        run: |
+          docker run -d --name pg -p 5432:5432 \
+            -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=souvenir_test souvenir-postgres:test
+          # The server listens on TCP only after the init scripts have run.
+          for _ in $(seq 1 60); do
+            docker exec pg pg_isready -h 127.0.0.1 -p 5432 -q && exit 0
+            sleep 1
+          done
+          docker logs pg
+          exit 1
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test the image
+        env:
+          SOUVENIR_TEST_PG_NATIVE_URL: postgres://postgres:postgres@localhost:5432/souvenir_test
+        run: cargo test -p souvenir-integration-tests --test sqlx_postgres_native --test diesel_postgres_native
+      - name: Push
+        if: github.event_name == 'push'
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/souvenir-postgres"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag souvenir-postgres:test "$image:${{ matrix.pg }}-${{ matrix.arch }}"
+          docker push "$image:${{ matrix.pg }}-${{ matrix.arch }}"
+
+  # One multi-architecture tag per Postgres version: `18` tracks main, and a
+  # `v0.7.0` tag also publishes `18-0.7.0`. `latest` is the newest Postgres.
+  publish:
+    name: Publish (PG ${{ matrix.pg }})
+    if: github.event_name == 'push'
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        pg: [14, 15, 16, 17, 18]
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - name: Merge architectures
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/souvenir-postgres"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          tags=(-t "$image:${{ matrix.pg }}")
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tags+=(-t "$image:${{ matrix.pg }}-${GITHUB_REF_NAME#v}")
+          fi
+          if [[ "${{ matrix.pg }}" == 18 ]]; then
+            tags+=(-t "$image:latest")
+          fi
+          docker buildx imagetools create "${tags[@]}" \
+            "$image:${{ matrix.pg }}-amd64" "$image:${{ matrix.pg }}-arm64"

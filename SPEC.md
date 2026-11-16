@@ -325,7 +325,7 @@ library.
 | Representation | When |
 |---|---|
 | Text (default) | Any column. Use a byte-order collation (Postgres `COLLATE "C"`, MySQL `ascii_bin`, SQLite's default) so the database sorts IDs in ID order, and a check against the section 6.1 regular expression. Never a case-insensitive or locale-aware collation. |
-| 20-byte binary | Large tables where index size matters (Postgres `bytea` with a length check, MySQL `BINARY(20)`). Still self-describing. |
+| 20-byte binary | Large tables where index size matters (Postgres `bytea` with a length check, MySQL `BINARY(20)`). Still self-describing. The `souvenir` Postgres extension stores this form in a native type that prints as the canonical string. |
 | UUIDv7 (section 8) | Only for columns that must be native UUIDs. The prefix is not stored, so whatever reads the column has to supply it, and nothing detects a wrong one. |
 | JSON and HTTP | The canonical string; absence is `null` or an absent field |
 | URLs | The canonical string as-is |
@@ -333,6 +333,6 @@ library.
 A Postgres domain for text IDs:
 
 ```sql
-CREATE DOMAIN souvenir AS text COLLATE "C"
+CREATE DOMAIN souvenir_text AS text COLLATE "C"
   CHECK (VALUE ~ '^[a-z]{1,8}_[0-3][0-9a-hjkmnp-tv-z]{24}$');
 ```

@@ -55,6 +55,24 @@ pub use tagged::Tagged;
 #[cfg(feature = "macros")]
 pub use souvenir_macros::{Identifiable, Tagged, id};
 
+/// Diesel SQL types.
+#[cfg(all(feature = "diesel", feature = "postgres"))]
+pub mod sql_types {
+    /// The `souvenir` type from the `souvenir-postgres` extension, for
+    /// `table!` columns holding a [`Souvenir`](crate::Souvenir) or an
+    /// [`Id<T>`](crate::Id) whose `T` has
+    /// [`Storage::Native`](crate::Storage::Native).
+    ///
+    /// `diesel print-schema` generates its own type for `souvenir` columns;
+    /// to use this one instead, add `"souvenir::sql_types::*"` to
+    /// `import_types` in `diesel.toml`.
+    #[derive(
+        Debug, Clone, Copy, Default, ::diesel::sql_types::SqlType, ::diesel::query_builder::QueryId,
+    )]
+    #[diesel(postgres_type(name = "souvenir"))]
+    pub struct Souvenir;
+}
+
 /// The `uuid` crate, re-exported so `to_uuid` and `from_uuid` can be used
 /// without depending on it directly (and without a version mismatch).
 #[cfg(feature = "uuid")]

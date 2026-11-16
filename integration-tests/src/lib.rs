@@ -4,6 +4,9 @@
 //!
 //! Postgres and MySQL tests run only when `SOUVENIR_TEST_PG_URL` /
 //! `SOUVENIR_TEST_MYSQL_URL` are set; SQLite tests always run in memory.
+//! Tests of the `souvenir` extension's native type run only when
+//! `SOUVENIR_TEST_PG_NATIVE_URL` names a Postgres server that has the
+//! extension installed (such as the `souvenir-postgres` Docker image).
 //!
 //! With diesel, a column whose SQL type contradicts the prefix's declared
 //! storage fails to build (`Event` is stored as bytes, not text):
@@ -43,6 +46,17 @@ tagged! {
     pub Event = "event", storage = Bytes;
     /// Stored as a UUIDv7.
     pub Account = "acct", storage = Uuid;
+    /// Stored as the `souvenir` extension's type (20 bytes elsewhere).
+    pub Order = "order", storage = Native;
+}
+
+/// A natively stored ID for each fixture, with the fixture's user ID's
+/// timestamp and random bits.
+pub fn order_ids() -> Vec<Id<Order>> {
+    fixtures()
+        .iter()
+        .map(|f| Id::from_parts(f.user.timestamp_ms(), f.user.random()).unwrap())
+        .collect()
 }
 
 /// Prefixes chosen so that some are prefixes of others.
@@ -159,10 +173,13 @@ pub fn assert_db_err<T: std::fmt::Debug, E: std::fmt::Display>(result: Result<T,
 /// The recommended Postgres domain for text IDs (see the README).
 pub const PG_DOMAIN: &str = r#"
 DO $$ BEGIN
-    CREATE DOMAIN souvenir AS text COLLATE "C"
+    CREATE DOMAIN souvenir_text AS text COLLATE "C"
         CHECK (VALUE ~ '^[a-z]{1,8}_[0-3][0-9a-hjkmnp-tv-z]{24}$');
 EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
 END $$"#;
+
+/// Install the extension in the test database.
+pub const PG_EXTENSION: &str = "CREATE EXTENSION IF NOT EXISTS souvenir";
 
 /// The recommended MySQL column type for text IDs (see the README).
 pub const MYSQL_TEXT: &str = "VARCHAR(34) CHARACTER SET ascii COLLATE ascii_bin";

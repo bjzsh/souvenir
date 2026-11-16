@@ -27,6 +27,22 @@ pub(crate) fn pg_bytea(ty: &PgTypeInfo) -> bool {
         || matches!(ty.kind(), PgTypeKind::Domain(base) if pg_bytea(base))
 }
 
+/// The `souvenir` type from the `souvenir-postgres` extension, which has
+/// no fixed OID: sqlx looks it up by name.
+#[cfg(feature = "postgres")]
+pub(crate) const PG_SOUVENIR: &str = "souvenir";
+
+/// Arrays of [`PG_SOUVENIR`].
+#[cfg(feature = "postgres")]
+pub(crate) const PG_SOUVENIR_ARRAY: &str = "_souvenir";
+
+/// The extension's `souvenir` type, including domains over it.
+#[cfg(feature = "postgres")]
+pub(crate) fn pg_native(ty: &PgTypeInfo) -> bool {
+    use sqlx::TypeInfo;
+    ty.name() == PG_SOUVENIR || matches!(ty.kind(), PgTypeKind::Domain(base) if pg_native(base))
+}
+
 /// Postgres `uuid`, including domains over it.
 #[cfg(feature = "postgres")]
 pub(crate) fn pg_uuid(ty: &PgTypeInfo) -> bool {

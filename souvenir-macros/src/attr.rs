@@ -32,8 +32,9 @@ pub fn parse(attrs: &[Attribute]) -> Result<SouvenirAttrs> {
                 out.id = true;
                 Ok(())
             } else {
-                Err(meta
-                    .error("expected `prefix = \"...\"`, `storage = Text | Bytes | Uuid` or `id`"))
+                Err(meta.error(
+                    "expected `prefix = \"...\"`, `storage = Text | Bytes | Uuid | Native` or `id`",
+                ))
             }
         })?;
     }

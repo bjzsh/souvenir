@@ -1,0 +1,6 @@
+comment = 'Souvenir IDs: type-safe, sortable, prefixed identifiers stored in 20 bytes'
+default_version = '@CARGO_VERSION@'
+module_pathname = '$libdir/souvenir'
+relocatable = false
+superuser = true
+trusted = false

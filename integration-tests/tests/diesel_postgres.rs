@@ -36,7 +36,7 @@ fn diesel_postgres() {
     diesel::sql_query(PG_DOMAIN).execute(&mut conn).unwrap();
     diesel::sql_query(
         "CREATE TEMP TABLE diesel_ids (k INT PRIMARY KEY,
-         any_text souvenir NOT NULL, user_text souvenir NOT NULL,
+         any_text souvenir_text NOT NULL, user_text souvenir_text NOT NULL,
          event_bytes BYTEA NOT NULL, account_uuid UUID NOT NULL, any_bytes BYTEA NOT NULL)",
     )
     .execute(&mut conn)
@@ -99,5 +99,5 @@ fn diesel_postgres() {
         "INSERT INTO diesel_ids VALUES (999, 'junk', 'junk', '\\x00', gen_random_uuid(), '\\x00')",
     )
     .execute(&mut conn);
-    assert_db_err(junk, "souvenir_check");
+    assert_db_err(junk, "souvenir_text_check");
 }

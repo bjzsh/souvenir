@@ -34,7 +34,7 @@ async fn sqlx_postgres() {
     sqlx::raw_sql(PG_DOMAIN).execute(&pool).await.unwrap();
     sqlx::query(
         "CREATE TEMP TABLE sqlx_ids (k INT PRIMARY KEY,
-         any_text souvenir NOT NULL, user_text souvenir NOT NULL,
+         any_text souvenir_text NOT NULL, user_text souvenir_text NOT NULL,
          event_bytes BYTEA NOT NULL CHECK (octet_length(event_bytes) = 20),
          account_uuid UUID NOT NULL, any_bytes BYTEA NOT NULL)",
     )
@@ -139,7 +139,7 @@ async fn sqlx_postgres() {
     )
     .execute(&pool)
     .await;
-    assert_db_err(junk, "souvenir_check");
+    assert_db_err(junk, "souvenir_text_check");
 
     // The declared form decides how a value is read; nothing is guessed.
     assert_err(

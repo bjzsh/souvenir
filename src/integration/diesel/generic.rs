@@ -62,8 +62,8 @@ where
     fn from_sql(bytes: DB::RawValue<'_>) -> deserialize::Result<Self> {
         require_storage!(
             T,
-            Storage::Bytes | Storage::Uuid,
-            "a Binary column needs a Tagged type with Storage::Bytes or Storage::Uuid"
+            Storage::Bytes | Storage::Native | Storage::Uuid,
+            "a Binary column needs a Tagged type with Storage::Bytes, Native or Uuid"
         );
         let bytes = <Vec<u8> as FromSql<Binary, DB>>::from_sql(bytes)?;
         Ok(decode_stored_binary(&bytes)?)

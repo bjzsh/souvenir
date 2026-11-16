@@ -1,0 +1,5 @@
+# Docker builds (souvenir-postgres/Dockerfile) only need the Rust sources.
+**/target
+**/node_modules
+souvenir-wasm/dist
+.git

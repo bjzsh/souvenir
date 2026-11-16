@@ -10,6 +10,7 @@
 /// tagged!(pub User = "user");                    // text, the default
 /// tagged!(pub Event = "event", storage = Bytes); // 20 bytes
 /// tagged!(pub Account = "acct", storage = Uuid); // native uuid
+/// tagged!(pub Order = "order", storage = Native); // the extension's type
 /// ```
 ///
 /// | `Storage` | Postgres | MySQL         | SQLite        |
@@ -17,6 +18,7 @@
 /// | `Text`    | `text`   | `VARCHAR(34)` | `TEXT`        |
 /// | `Bytes`   | `bytea`  | `BINARY(20)`  | `BLOB` (20 B) |
 /// | `Uuid`    | `uuid`   | `BINARY(16)`  | `BLOB` (16 B) |
+/// | `Native`  | `souvenir` (extension) | `BINARY(20)` | `BLOB` (20 B) |
 ///
 /// [`Souvenir`](crate::Souvenir) has no `Tagged` type, so it is stored as
 /// text. To store one in another form, bind `id.as_bytes()` and read with
@@ -37,4 +39,9 @@ pub enum Storage {
     /// a bare UUID, and reading it through another `Id<U>` silently gives the
     /// IDs `U`'s prefix.
     Uuid,
+    /// The `souvenir` type from the `souvenir-postgres` extension: 20
+    /// bytes on disk, printed as the ID string. As compact as `Bytes` and as
+    /// readable as `Text`, but needs the extension installed. MySQL and
+    /// SQLite have no such type and store `Bytes`.
+    Native,
 }

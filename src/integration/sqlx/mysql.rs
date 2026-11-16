@@ -31,7 +31,7 @@ impl<T: Tagged> Type<MySql> for Id<T> {
     fn type_info() -> MySqlTypeInfo {
         match T::STORAGE {
             Storage::Text => <&str as Type<MySql>>::type_info(),
-            Storage::Bytes | Storage::Uuid => <&[u8] as Type<MySql>>::type_info(),
+            Storage::Bytes | Storage::Native | Storage::Uuid => <&[u8] as Type<MySql>>::type_info(),
         }
     }
 
@@ -44,7 +44,7 @@ impl<T: Tagged> Encode<'_, MySql> for Id<T> {
     fn encode_by_ref(&self, buf: &mut Vec<u8>) -> Result<IsNull, BoxDynError> {
         match T::STORAGE {
             Storage::Text => mysql_encode_text(self.to_untyped(), buf),
-            Storage::Bytes | Storage::Uuid => {
+            Storage::Bytes | Storage::Native | Storage::Uuid => {
                 <&[u8] as Encode<'_, MySql>>::encode(StoredBinary::of(self).as_slice(), buf)
             }
         }
@@ -55,11 +55,9 @@ impl<T: Tagged> Decode<'_, MySql> for Id<T> {
     fn decode(value: MySqlValueRef<'_>) -> Result<Self, BoxDynError> {
         match T::STORAGE {
             Storage::Text => mysql_decode_text(value, Self::parse),
-            Storage::Bytes | Storage::Uuid => {
-                Ok(decode_stored_binary(<&[u8] as Decode<MySql>>::decode(
-                    value,
-                )?)?)
-            }
+            Storage::Bytes | Storage::Native | Storage::Uuid => Ok(decode_stored_binary(
+                <&[u8] as Decode<MySql>>::decode(value)?,
+            )?),
         }
     }
 }

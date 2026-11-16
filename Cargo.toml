@@ -1,5 +1,8 @@
 [workspace]
-members = [".", "souvenir-*", "integration-tests"]
+members = [".", "souvenir-macros", "souvenir-wasm", "integration-tests"]
+# Built with cargo-pgrx, which needs a configured Postgres; it is its own
+# workspace.
+exclude = ["souvenir-postgres"]
 resolver = "3"
 
 [workspace.package]
